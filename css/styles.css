@@ -1,0 +1,15 @@
+.rounded-topleft{
+    border-top-left-radius: 0.5em;
+}
+
+.rounded-topright{
+    border-top-right-radius: 0.5em;
+}
+
+.rounded-bottomleft{
+    border-bottom-left-radius: 0.5em;
+}
+
+.rounded-bottomright{
+    border-bottom-right-radius: 0.5em;
+}
