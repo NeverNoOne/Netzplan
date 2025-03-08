@@ -12,6 +12,10 @@
             <div id="head" class="row mb-5 mt-5">
                 <h1>Netzplan-Generator</h1>
                 <button class="btn btn-primary" onclick="showAllTasks()">show all Tasks</button>
+                <div class="mt-3 text-start">
+                    <label for="formFile" class="form-label">Datei hochladen</label>
+                    <input class="form-control" type="file" id="formFile" accept=".csv" oninput="readFile()">
+                </div>
             </div>
             <div class="row">
                 <div class="input-group">
@@ -32,6 +36,39 @@
 
 <script>
 
+    function readFile() {
+        /** @type {File} */
+        const file = document.getElementById("formFile").files[0];
+        if (file.type != "text/csv") {
+            alert("Es können nur CSV-Dateien hochgeladen werden.");
+            document.getElementById("formFile").value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function() {
+            console.log(reader.result);
+            mapCSVtoTasks(reader.result);
+            drawTasks();
+        }
+        console.log(file);
+        reader.readAsText(file);
+    }
+
+    function mapCSVtoTasks(/**@type{string}*/csv){
+        TaskList = [];
+        let lines = csv.split("\r\n");
+        for (let index = 0; index < lines.length - 1; index++) {
+            const element = lines[index];
+            let values = element.split(";");
+            let ID = values[0];
+            let Name = values[1];
+            let Duration = values[2];
+            let Predecessor = values[3];
+            let CurTask = new Task(ID, Name, Duration, Predecessor);
+            TaskList.push(CurTask);
+        }
+    }
+
     function showAllTasks() {
         this.headElement = document.getElementById("head");
         TaskList.forEach(task => {
@@ -44,22 +81,55 @@
             this.ID = ID;
             this.Name = Name;
             /** @type {int} */
-            this.Duration = Duration;
-            /** @type {int[]} */
-            this.Predecessor = Predecessor.split(",").map(Number).sort((a, b) => a - b);
+            this.Duration = Number(Duration);
+            /** @type {string[]} */
+            this.Predecessor = Predecessor.split(","); //.map(Number).sort((a, b) => a - b)
 
-            //TODO: Berechnung der Werte
-
+            if (TaskList.length == 0 || this.Predecessor == ""){
+                /** @type {int} */
+                this.Start = 0;
+            }
+            else{
+                let tmpTaskList = TaskList.filter(task => this.Predecessor.includes(task.ID));
+                if (tmpTaskList.length == 0){
+                    /** @type {int} */
+                    this.Start = 0;
+                }
+                else{
+                    /** @type {int} */
+                    this.Start = tmpTaskList[0].End;
+                }
+            }
             /** @type {int} */
-            this.Start = 0;
-            /** @type {int} */
-            this.End = this.Start + this.Duration;
+            this.End = Number(this.Start) + Number(this.Duration);
             /** @type {int} */
             this.BackAnfang = 0;
             /** @type {int} */
             this.BackEnde = 0;
             /** @type {int} */
             this.Puffer = 0;
+        }
+
+        calculateBackValues(){
+            //TODO: BackAnfang, BackEnde, Puffer berechnen
+            //interesting for the back calculation
+            //this.Start = Math.max(...tmpTaskList.map(task => task.End));
+            
+            if (TaskList.length != 0){
+                let tmpTaskList = TaskList.filter(task => task.Predecessor.includes(this.ID));
+                if (tmpTaskList.length != 0){
+                    this.BackEnde = Math.max(...tmpTaskList.map(task => task.Start));
+                    this.BackAnfang = this.BackEnde - this.Duration;
+                    this.Puffer = this.Start - this.BackAnfang;
+                }
+                //TODO: wenn es mehere letzte Tasks gibt, dann den mit dem größten Endwert nehmen
+                else{
+                    this.BackAnfang = this.Start;
+                    this.BackEnde = this.End;
+                    this.Puffer = 0;
+                }
+            }
+
         }
 
         getHtml(){
@@ -81,7 +151,7 @@
                         ${this.Duration}
                     </div>
                     <div class="col-3 border">
-                        ${this.Duration}
+                        
                     </div>
                     <div class="col-3 border">
                         ${this.End}
@@ -147,6 +217,9 @@
     */
     function drawTasks() {
         orderTasks();
+        TaskList.forEach(task => {
+            task.calculateBackValues();
+        });
         document.getElementById("taskContainer").innerHTML = "";
         TaskList.forEach(task => {
             document.getElementById("taskContainer").innerHTML += task.getHtml();
