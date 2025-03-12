@@ -29,50 +29,18 @@
         </div>
         <div class="container" id="taskContainer">
             <!--Netzplan kommt hierhin-->
-            <div class="d-inline-block p-3 text-center Task" id="${this.ID}">
-                <div class="row">
-                    <div class="col-3 border rounded-topleft">
-                        ${this.ID}
-                    </div>
-                    <div class="col border rounded-topright">
-                        ${this.Name}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-3 border">
-                        ${this.Start}
-                    </div>
-                    <div class="col-3 border">
-                        ${this.Duration}
-                    </div>
-                    <div class="col-3 border">
-                        
-                    </div>
-                    <div class="col-3 border">
-                        ${this.End}
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-3 border rounded-bottomleft">
-                        ${this.BackAnfang}
-                    </div>
-                    <div class="col-3 border">
-                        ${this.Puffer}
-                    </div>
-                    <div class="col-3 border">
-                        ${this.Puffer}
-                    </div>
-                    <div class="col-3 border rounded-bottomright">
-                        ${this.BackEnde}
-                    </div>
-                </div>
-            </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     </body>
 </html>
 
 <script>
+    //TODO: Pfeile beim resize erneut zeichnen bzw position anpassen
+    // document.onresize += function(){
+    //     document.getElementsByClassName("arrow").forEach(arrow => {
+    //         arrow.remove();
+    //     });
+    // }
 
     function readFile() {
         /** @type {File} */
@@ -121,8 +89,9 @@
             /** @type {int} */
             this.Duration = Number(Duration);
             /** @type {string[]} */
-            this.Predecessor = Predecessor.split(","); //.map(Number).sort((a, b) => a - b)
+            this.Predecessor = Predecessor.split(",").filter(x => x.trim() != ""); //.map(Number).sort((a, b) => a - b)
             this.Parellel = false;
+            this.isDrawn = false;
 
             if (TaskList.length == 0 || this.Predecessor == ""){
                 /** @type {int} */
@@ -177,7 +146,7 @@
 
         }
 
-        getHtml(newRow = false){
+        getHtml(){
             return `
             <div class="d-inline-block p-3 text-center Task" id="${this.ID}">
                 <div class="row">
@@ -221,8 +190,38 @@
         }
     }
 
-    const Arrow = function(/** @type{int} */deg){
-        return `<img src="assets/arrow.svg" class="img-fluid" style="height: 2em; rotate: ${90-deg}deg; margin-top: -55px;">`;
+    function drawArrow(/**@type {Task}*/Task) {
+        const startElement = document.getElementById(Task.Predecessor[0]);
+        const endElement = document.getElementById(Task.ID);
+
+        // Get bounding rectangles for start and end elements
+        const startRect = startElement.getBoundingClientRect();
+        const endRect = endElement.getBoundingClientRect();
+
+        // Calculate the center of both elements (taking into account offsets within the page)
+        const startX = startRect.right;
+        const startY = startRect.top + startRect.height / 2;
+        const endX = endRect.left;
+        const endY = endRect.top + endRect.height / 2;
+
+        // Create the arrow (SVG line) dynamically
+        const arrow = document.createElement('div');
+        arrow.classList.add('arrow');
+        const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+        const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
+        
+        // Set the CSS styles for the arrow
+        arrow.style.width = `${arrowWidth}px`;
+        arrow.style.height = '2px';
+        arrow.style.backgroundColor = 'black';
+        arrow.style.position = 'absolute';
+        arrow.style.top = `${startY}px`;
+        arrow.style.left = `${startX}px`;
+        arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
+        arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
+        
+        // Append the arrow to the document
+        document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
     }
 
     /**
@@ -258,38 +257,75 @@
     }
 
     /**
-    TODO:parallele Tasks darstellen
+    TODO:parallele Tasks darstellen done?
     TODO: Pfeile richtig darstellen
+    TODO: Pfeile richtig darstellen bei mehreren Vorgängern
+    TODO: bei mehr als 2 parallelen Tasks, testen ob alles richtig dargestellt wird
     */
     function drawTasks() {
         TaskElementMap.clear();
         orderTasks();
         TaskList.forEach(task => {
             task.calculateBackValues();
+            task.isDrawn = false;
         });
         document.getElementById("taskContainer").innerHTML = "";
-        // TaskList.forEach(task => {
-        //     TaskElementMap.set(task.ID, task);
-        //     document.getElementById("taskContainer").innerHTML += task.getHtml(task.Parellel);
-        //     if (TaskList.indexOf(task) != TaskList.length - 1){
-        //         //console.log(`Task: ${TaskList.indexOf(task)} - ${TaskList.length}`);
-        //         document.getElementById("taskContainer").innerHTML += Arrow(0);
-        //     }
-        // });
 
-        for (let index = 0; index < TaskList.length; index++) {
-            const task = TaskList[index];
+        TaskList.forEach(task =>{
             TaskElementMap.set(task.ID, task);
-            if (task.Parellel){
+            if (task.isDrawn){
+                return;
+            }
+            if (task.Parellel && task.Predecessor.length != 0){
                 let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
                 console.log(task.ID);
                 console.log(tmpTaskParallel);
+                let tmpDiv = document.createElement("div");
+                tmpDiv.classList.add("row", "d-inline-block","p-3", "text-center", "Task", "parallele");
+                //Tasks zeichnen
+                tmpTaskParallel.forEach(t => {
+                    TaskList[TaskList.indexOf(t)].isDrawn = true;
+                    tmpDiv.innerHTML += t.getHtml();                    
+                });
+                document.getElementById("taskContainer").appendChild(tmpDiv);
+
+                //margin an position anpassen
+                tmpTaskParallel.forEach(t => {
+                    if (t.Predecessor.length == 0){
+                        document.getElementById(t.ID).style.marginRight = "0.75rem";
+                    }
+                    else{
+                        with (document.getElementById(t.ID)){
+                            style.marginLeft = "0.75rem";
+                            style.marginRight = "0.75rem";
+                        }
+                    }
+                });
+
+                //Pfeil zeichnen
+                tmpTaskParallel.forEach(t => {
+                    drawArrow(t);
+                });
             }
-            document.getElementById("taskContainer").innerHTML += task.getHtml(task.Parellel);
-            if (TaskList.indexOf(task) != TaskList.length - 1){
-                //console.log(`Task: ${TaskList.indexOf(task)} - ${TaskList.length}`);
-                document.getElementById("taskContainer").innerHTML += Arrow(0);
+            else{
+                document.getElementById("taskContainer").innerHTML += task.getHtml(task.Parellel);
+                if (task.Predecessor.length == 0){
+                    document.getElementById(task.ID).style.marginRight = "0.75rem";
+                }
+                else{
+                    with (document.getElementById(task.ID)){
+                        style.marginLeft = "0.75rem";
+                        style.marginRight = "0.75rem";
+                    }
+                }
+                task.isDrawn = true;
+                //TaskList.indexOf(task) != TaskList.length - 1 || 
+                if (task.Predecessor.length != 0){
+                    //console.log(`Task: ${TaskList.indexOf(task)} - ${TaskList.length}`);
+                    //document.getElementById("taskContainer").innerHTML += Arrow(0);
+                    drawArrow(task);
+                }
             }
-        }
+        });
     }
 </script>

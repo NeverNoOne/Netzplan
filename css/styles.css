@@ -13,3 +13,9 @@
 .rounded-bottomright{
     border-bottom-right-radius: 0.5em;
 }
+
+.arrow {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+  }
