@@ -8,10 +8,11 @@
         <link rel="stylesheet" href="css/styles.css">
     </head>
     <body>
+        <a href="https://github.com/NeverNoOne/Netzplan" class="btn btn-secondary">zum Quellcode</a>
         <div class="container text-center mb-5">
             <div id="head" class="row mb-5 mt-5">
                 <h1>Netzplan-Generator</h1>
-                <button class="btn btn-primary" onclick="showAllTasks()">show all Tasks</button>
+                <button hidden class="btn btn-primary" onclick="showAllTasks()">show all Tasks</button>
                 <div class="mt-3 text-start">
                     <label for="formFile" class="form-label">Datei hochladen</label>
                     <input class="form-control" type="file" id="formFile" accept=".csv" oninput="readFile()">
@@ -35,12 +36,47 @@
 </html>
 
 <script>
+
     //TODO: Pfeile beim resize erneut zeichnen bzw position anpassen
-    // document.onresize += function(){
-    //     document.getElementsByClassName("arrow").forEach(arrow => {
-    //         arrow.remove();
-    //     });
-    // }
+    window.addEventListener("resize", function(){
+        for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
+            const arrow = document.getElementsByClassName("arrow").item(index);
+            let TaskID = arrow.id.split("-")[1];
+            if (TaskID == null){
+                console.error("TaskID is null\n" + arrow.id);
+                return;
+            }
+            let Task = TaskElementMap.get(TaskID);
+
+            const startElement = document.getElementById(Task.Predecessor[0]);
+            const endElement = document.getElementById(Task.ID);
+
+            // Get bounding rectangles for start and end elements
+            const startRect = startElement.getBoundingClientRect();
+            const endRect = endElement.getBoundingClientRect();
+
+            // Calculate the center of both elements (taking into account offsets within the page)
+            const startX = startRect.right;
+            const startY = startRect.top + startRect.height / 2;
+            const endX = endRect.left;
+            const endY = endRect.top + endRect.height / 2;
+
+            // calculate the arrow width and angle
+            const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
+            
+            // Set the CSS styles for the arrow
+            arrow.style.width = `${arrowWidth}px`;
+            arrow.style.height = '2px';
+            arrow.style.backgroundColor = 'black';
+            arrow.style.position = 'absolute';
+            arrow.style.top = `${startY}px`;
+            arrow.style.left = `${startX}px`;
+            arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
+            arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
+        }
+        //console.log("resize");
+    });
 
     function readFile() {
         /** @type {File} */
@@ -105,7 +141,7 @@
                 }
                 else{
                     /** @type {int} */
-                    this.Start = tmpTaskList[0].End;
+                    this.Start = Math.max(...tmpTaskList.map(task => Number(task.End)));
                 }
             }
             /** @type {int} */
@@ -191,37 +227,40 @@
     }
 
     function drawArrow(/**@type {Task}*/Task) {
-        const startElement = document.getElementById(Task.Predecessor[0]);
-        const endElement = document.getElementById(Task.ID);
+        Task.Predecessor.forEach(Predecessor => {
+            const startElement = document.getElementById(Predecessor);
+            const endElement = document.getElementById(Task.ID);
 
-        // Get bounding rectangles for start and end elements
-        const startRect = startElement.getBoundingClientRect();
-        const endRect = endElement.getBoundingClientRect();
+            // Get bounding rectangles for start and end elements
+            const startRect = startElement.getBoundingClientRect();
+            const endRect = endElement.getBoundingClientRect();
 
-        // Calculate the center of both elements (taking into account offsets within the page)
-        const startX = startRect.right;
-        const startY = startRect.top + startRect.height / 2;
-        const endX = endRect.left;
-        const endY = endRect.top + endRect.height / 2;
+            // Calculate the center of both elements (taking into account offsets within the page)
+            const startX = startRect.right;
+            const startY = startRect.top + startRect.height / 2;
+            const endX = endRect.left;
+            const endY = endRect.top + endRect.height / 2;
 
-        // Create the arrow (SVG line) dynamically
-        const arrow = document.createElement('div');
-        arrow.classList.add('arrow');
-        const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-        const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
-        
-        // Set the CSS styles for the arrow
-        arrow.style.width = `${arrowWidth}px`;
-        arrow.style.height = '2px';
-        arrow.style.backgroundColor = 'black';
-        arrow.style.position = 'absolute';
-        arrow.style.top = `${startY}px`;
-        arrow.style.left = `${startX}px`;
-        arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
-        arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
-        
-        // Append the arrow to the document
-        document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
+            // Create the arrow (SVG line) dynamically
+            const arrow = document.createElement('div');
+            arrow.classList.add('arrow');
+            arrow.id = `arrow-${Task.ID}`;
+            const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
+            
+            // Set the CSS styles for the arrow
+            arrow.style.width = `${arrowWidth}px`;
+            arrow.style.height = '2px';
+            arrow.style.backgroundColor = 'black';
+            arrow.style.position = 'absolute';
+            arrow.style.top = `${startY}px`;
+            arrow.style.left = `${startX}px`;
+            arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
+            arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
+            
+            // Append the arrow to the document
+            document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
+        });
     }
 
     /**
@@ -261,6 +300,7 @@
     TODO: Pfeile richtig darstellen
     TODO: Pfeile richtig darstellen bei mehreren Vorgängern
     TODO: bei mehr als 2 parallelen Tasks, testen ob alles richtig dargestellt wird
+    TODO: primär Pfad kennzeichnen
     */
     function drawTasks() {
         TaskElementMap.clear();
@@ -278,10 +318,13 @@
             }
             if (task.Parellel && task.Predecessor.length != 0){
                 let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
-                console.log(task.ID);
-                console.log(tmpTaskParallel);
+                //console.log(task.ID);
+                //console.log(tmpTaskParallel);
                 let tmpDiv = document.createElement("div");
                 tmpDiv.classList.add("row", "d-inline-block","p-3", "text-center", "Task", "parallele");
+                tmpDiv.style.marginLeft = "0.75rem";
+                tmpDiv.style.marginRight = "0.75rem";
+
                 //Tasks zeichnen
                 tmpTaskParallel.forEach(t => {
                     TaskList[TaskList.indexOf(t)].isDrawn = true;
