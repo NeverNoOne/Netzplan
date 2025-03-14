@@ -36,8 +36,10 @@
 </html>
 
 <script>
+    const ArrowColor = "WhiteSmoke";
+    const ArrowColorPrimary = "Orange";
 
-    //TODO: Pfeile beim resize erneut zeichnen bzw position anpassen
+    // Resize arrows when the window is resized
     window.addEventListener("resize", function(){
         for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
             const arrow = document.getElementsByClassName("arrow").item(index);
@@ -68,7 +70,7 @@
             // Set the CSS styles for the arrow
             arrow.style.width = `${arrowWidth}px`;
             arrow.style.height = '2px';
-            arrow.style.backgroundColor = 'black';
+            arrow.style.backgroundColor = ArrowColor;
             arrow.style.position = 'absolute';
             arrow.style.top = `${startY}px`;
             arrow.style.left = `${startX}px`;
@@ -251,7 +253,7 @@
             // Set the CSS styles for the arrow
             arrow.style.width = `${arrowWidth}px`;
             arrow.style.height = '2px';
-            arrow.style.backgroundColor = 'black';
+            arrow.style.backgroundColor = ArrowColor;
             arrow.style.position = 'absolute';
             arrow.style.top = `${startY}px`;
             arrow.style.left = `${startX}px`;
@@ -305,6 +307,7 @@
     function drawTasks() {
         TaskElementMap.clear();
         orderTasks();
+        //TODO:sort by Start/End descending
         TaskList.forEach(task => {
             task.calculateBackValues();
             task.isDrawn = false;
