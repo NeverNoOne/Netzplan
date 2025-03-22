@@ -83,6 +83,10 @@
     function readFile() {
         /** @type {File} */
         const file = document.getElementById("formFile").files[0];
+        if (file == null) {
+            return;
+        }
+
         if (file.type != "text/csv") {
             alert("Es können nur CSV-Dateien hochgeladen werden.");
             document.getElementById("formFile").value = "";
@@ -354,7 +358,7 @@
                 });
             }
             else{
-                document.getElementById("taskContainer").innerHTML += task.getHtml(task.Parellel);
+                document.getElementById("taskContainer").innerHTML += task.getHtml();
                 if (task.Predecessor.length == 0){
                     document.getElementById(task.ID).style.marginRight = "0.75rem";
                 }
