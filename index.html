@@ -170,7 +170,7 @@
                 if (tmpTaskList.length != 0){
                     this.BackEnde = Math.max(...tmpTaskList.map(task => task.Start));
                     this.BackAnfang = this.BackEnde - this.Duration;
-                    this.Puffer = this.Start - this.BackAnfang;
+                    this.Puffer = this.BackAnfang - this.Start;
                 }
                 //TODO: wenn es mehere letzte Tasks gibt, dann den mit dem größten Endwert nehmen
                 else{
