@@ -20,7 +20,15 @@
       }
       return tmp;
     }
+    getTaskByID(ID) {
+      return this.find((task) => task.ID == ID);
+    }
     add(task) {
+      if (this.getTaskByID(task.ID) != void 0) {
+        console.error("Task already exists", task.ID);
+        alert("Task already exists: " + task.ID);
+        return;
+      }
       if (this.length == 0 || task.Predecessor.length == 0) {
         task.Start = 0;
       } else {
@@ -43,7 +51,6 @@
     calculateBackValues(index = 0) {
       if (index >= this.length) return;
       this.calculateBackValues(index + 1);
-      console.log("calculateBackValues", index);
       let curTask = this[index];
       if (this.length != 0) {
         let tmpTaskList = this.filter((task) => task.Predecessor.includes(curTask.ID));
@@ -62,13 +69,21 @@
         curTask.Parellel = tmpTaskList.length > 1;
       });
     }
+    orderByStart() {
+      this.sort((a, b) => a.Start - b.Start);
+    }
+    resetDrawn() {
+      this.forEach((task) => {
+        task.isDrawn = false;
+      });
+    }
   };
   var Task = class {
     constructor(ID, Name, Duration, Predecessor) {
-      this.ID = ID;
+      this.ID = ID.trim();
       this.Name = Name;
       this.Duration = Duration;
-      this.Predecessor = Predecessor.split(",").filter((x) => x.trim() != "");
+      this.Predecessor = Predecessor.split(",").filter((x) => x.trim() != "").map((x) => x.trim());
       this.Parellel = false;
       this.isDrawn = false;
       this.Start = 0;
@@ -79,7 +94,7 @@
     }
     getHtml() {
       return `
-        <div class="d-inline-block p-3 text-center Task" id="${this.ID}">
+        <div class="col d-inline-block p-3 text-center Task" id="${this.ID}">
             <div class="row">
                 <div class="col-3 border rounded-topleft">
                     ${this.ID}
@@ -124,21 +139,45 @@
   // src/script.ts
   var ArrowColor = "WhiteSmoke";
   window.addEventListener("resize", function() {
+    reposition_arrows();
+    let firstTaskRect = document.getElementById(TaskList[0].ID)?.getBoundingClientRect();
+    if (firstTaskRect == null) {
+      return;
+    }
+    for (let index = 0; index < TaskList.length; index++) {
+      const task = TaskList[index];
+      let tmpTaskRect = document.getElementById(task.ID)?.getBoundingClientRect();
+      if (tmpTaskRect == null) {
+        continue;
+      }
+      if (tmpTaskRect.top > firstTaskRect?.top) {
+        console.log("More than one row");
+        return;
+      }
+    }
+  });
+  var TaskList = new MyTaskList([]);
+  function reposition_arrows() {
     for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
       const arrow = document.getElementsByClassName("arrow").item(index);
       if (arrow == null) {
         return;
       }
-      let TaskID = arrow.id.split("-")[1];
+      let PredecessorID = arrow.id.split("-")[1];
+      let TaskID = arrow.id.split("-")[2];
       if (TaskID == null) {
         console.error("TaskID is null\n" + arrow.id);
         return;
       }
-      let Task2 = TaskElementMap.get(TaskID);
-      const startElement = document.getElementById(Task2.Predecessor[0]);
+      let Task2 = TaskList.getTaskByID(TaskID);
+      if (Task2 == null) {
+        console.error("Task is null\n" + TaskID);
+        return;
+      }
+      const startElement = document.getElementById(PredecessorID);
       const endElement = document.getElementById(Task2.ID);
       if (startElement == null || endElement == null) {
-        console.error("Start or End element is null\n" + Task2.Predecessor[0] + " - " + Task2.ID);
+        console.error("Start or End element is null\n" + PredecessorID + " - " + Task2.ID);
         return;
       }
       const startRect = startElement.getBoundingClientRect();
@@ -158,9 +197,8 @@
       arrow.style.transformOrigin = "0 50%";
       arrow.style.transform = `rotate(${angle}deg)`;
     }
-  });
-  var TaskList = new MyTaskList([]);
-  var TaskElementMap = /* @__PURE__ */ new Map();
+    ;
+  }
   function readFile() {
     const file = document.getElementById("formFile")?.files?.[0];
     if (file == null) {
@@ -181,38 +219,6 @@
     };
     reader.readAsText(file);
   }
-  function drawArrow(Task2) {
-    Task2.Predecessor.forEach((Predecessor) => {
-      const startElement = document.getElementById(Predecessor);
-      const endElement = document.getElementById(Task2.ID);
-      if (startElement == null || endElement == null) {
-        return;
-      }
-      const startRect = startElement.getBoundingClientRect();
-      const endRect = endElement.getBoundingClientRect();
-      if (startElement == null || endElement == null) {
-        return;
-      }
-      const startX = startRect.right;
-      const startY = startRect.top + startRect.height / 2;
-      const endX = endRect.left;
-      const endY = endRect.top + endRect.height / 2;
-      const arrow = document.createElement("div");
-      arrow.classList.add("arrow");
-      arrow.id = `arrow-${Task2.ID}`;
-      const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-      const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
-      arrow.style.width = `${arrowWidth}px`;
-      arrow.style.height = "2px";
-      arrow.style.backgroundColor = ArrowColor;
-      arrow.style.position = "absolute";
-      arrow.style.top = `${startY}px`;
-      arrow.style.left = `${startX}px`;
-      arrow.style.transformOrigin = "0 50%";
-      arrow.style.transform = `rotate(${angle}deg)`;
-      document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
-    });
-  }
   function addTask() {
     let ID = document.getElementById("ID").value;
     let Name = document.getElementById("Task").value;
@@ -229,11 +235,9 @@
     document.getElementById("Duration").value = "";
     document.getElementById("Predecessor").value = "";
   }
-  function orderTasks() {
-  }
   function drawTasks() {
-    TaskElementMap.clear();
-    orderTasks();
+    TaskList.resetDrawn();
+    TaskList.orderByStart();
     TaskList.calculateBackValues();
     let taskContainer = document.getElementById("taskContainer");
     if (taskContainer == null) {
@@ -242,7 +246,6 @@
     }
     taskContainer.innerHTML = "";
     TaskList.forEach((task) => {
-      TaskElementMap.set(task.ID, task);
       if (task.isDrawn) {
         return;
       }
@@ -283,6 +286,39 @@
           drawArrow(task);
         }
       }
+    });
+    window.dispatchEvent(new Event("resize"));
+  }
+  function drawArrow(Task2) {
+    Task2.Predecessor.forEach((Predecessor) => {
+      const startElement = document.getElementById(Predecessor);
+      const endElement = document.getElementById(Task2.ID);
+      if (startElement == null || endElement == null) {
+        return;
+      }
+      const startRect = startElement.getBoundingClientRect();
+      const endRect = endElement.getBoundingClientRect();
+      if (startElement == null || endElement == null) {
+        return;
+      }
+      const startX = startRect.right;
+      const startY = startRect.top + startRect.height / 2;
+      const endX = endRect.left;
+      const endY = endRect.top + endRect.height / 2;
+      const arrow = document.createElement("div");
+      arrow.classList.add("arrow");
+      arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
+      const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+      const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
+      arrow.style.width = `${arrowWidth}px`;
+      arrow.style.height = "2px";
+      arrow.style.backgroundColor = ArrowColor;
+      arrow.style.position = "absolute";
+      arrow.style.top = `${startY}px`;
+      arrow.style.left = `${startX}px`;
+      arrow.style.transformOrigin = "0 50%";
+      arrow.style.transform = `rotate(${angle}deg)`;
+      document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
     });
   }
   window.readFile = readFile;

@@ -7,23 +7,55 @@ const ArrowColorPrimary = "Orange";
 //#region eventListeners
 // Resize arrows when the window is resized
 window.addEventListener("resize", function(){
+    reposition_arrows();
+    let firstTaskRect = document.getElementById(TaskList[0].ID)?.getBoundingClientRect();
+    if (firstTaskRect == null){
+        return;
+    }
+
+    for (let index = 0; index < TaskList.length; index++) {
+        const task = TaskList[index];
+        let tmpTaskRect = document.getElementById(task.ID)?.getBoundingClientRect()
+        if (tmpTaskRect == null){
+            continue;
+        }
+        if (tmpTaskRect.top > firstTaskRect?.top){
+            console.log("More than one row");
+            return;
+        }
+    }
+
+});
+//#endregion
+
+//#region variables
+var TaskList:MyTaskList = new MyTaskList([]);
+//#endregion
+
+//#region resize functions
+function reposition_arrows():void{
     for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
         const arrow = document.getElementsByClassName("arrow").item(index) as HTMLElement;
         if (arrow == null){
             return;
         }
-        let TaskID = arrow.id.split("-")[1];
+        let PredecessorID = arrow.id.split("-")[1];
+        let TaskID = arrow.id.split("-")[2];
         if (TaskID == null){
             console.error("TaskID is null\n" + arrow.id);
             return;
         }
-        let Task = TaskElementMap.get(TaskID);
+        let Task = TaskList.getTaskByID(TaskID);
+        if (Task == null){
+            console.error("Task is null\n" + TaskID);
+            return;
+        }
 
-        const startElement = document.getElementById(Task.Predecessor[0]);
+        const startElement = document.getElementById(PredecessorID);
         const endElement = document.getElementById(Task.ID);
 
         if (startElement == null || endElement == null){
-            console.error("Start or End element is null\n" + Task.Predecessor[0] + " - " + Task.ID);
+            console.error("Start or End element is null\n" + PredecessorID + " - " + Task.ID);
             return;
         }
 
@@ -50,17 +82,12 @@ window.addEventListener("resize", function(){
         arrow.style.left = `${startX}px`;
         arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
         arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
-    }
+    };
     //console.log("resize");
-});
-//#endregion
+}
 
-//#region variables
-var TaskList:MyTaskList = new MyTaskList([]);
-var TaskElementMap = new Map();
 //#endregion
-
-function readFile() {
+function readFile():void {
     const file: File|undefined = (document.getElementById("formFile") as HTMLInputElement)?.files?.[0];
     if (file == null) {
         return;
@@ -85,52 +112,7 @@ function readFile() {
     reader.readAsText(file);
 }
 
-function drawArrow(Task:Task) {
-    Task.Predecessor.forEach(Predecessor => {
-        const startElement = document.getElementById(Predecessor);
-        const endElement = document.getElementById(Task.ID);
-
-        if (startElement == null || endElement == null){
-            return;
-        }
-
-        // Get bounding rectangles for start and end elements
-        const startRect = startElement.getBoundingClientRect();
-        const endRect = endElement.getBoundingClientRect();
-
-        if (startElement == null || endElement == null){
-            return;
-        }
-
-        // Calculate the center of both elements (taking into account offsets within the page)
-        const startX = startRect.right;
-        const startY = startRect.top + startRect.height / 2;
-        const endX = endRect.left;
-        const endY = endRect.top + endRect.height / 2;
-
-        // Create the arrow (SVG line) dynamically
-        const arrow = document.createElement('div');
-        arrow.classList.add('arrow');
-        arrow.id = `arrow-${Task.ID}`;
-        const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-        const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
-        
-        // Set the CSS styles for the arrow
-        arrow.style.width = `${arrowWidth}px`;
-        arrow.style.height = '2px';
-        arrow.style.backgroundColor = ArrowColor;
-        arrow.style.position = 'absolute';
-        arrow.style.top = `${startY}px`;
-        arrow.style.left = `${startX}px`;
-        arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
-        arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
-        
-        // Append the arrow to the document
-        (document.getElementById("taskContainer") as HTMLElement).innerHTML += arrow.outerHTML;
-    });
-}
-
-function addTask() {
+function addTask():void {
     let ID = (document.getElementById("ID") as HTMLInputElement).value;
     let Name = (document.getElementById("Task") as HTMLInputElement).value;
     let Duration = Number((document.getElementById("Duration") as HTMLInputElement).value);
@@ -143,15 +125,11 @@ function addTask() {
     clearControl();
 }
 
-function clearControl() {
+function clearControl():void {
     (document.getElementById("ID") as HTMLInputElement).value = "";
     (document.getElementById("Task") as HTMLInputElement).value = "";
     (document.getElementById("Duration") as HTMLInputElement).value = "";
     (document.getElementById("Predecessor") as HTMLInputElement).value = "";
-}
-
-function orderTasks() {
-    /*TODO: sort by Start (chronologically)*/
 }
 
 /**
@@ -161,9 +139,9 @@ TODO: Pfeile richtig darstellen bei mehreren Vorgängern
 TODO: bei mehr als 2 parallelen Tasks, testen ob alles richtig dargestellt wird
 TODO: primär Pfad kennzeichnen
 */
-function drawTasks() {
-    TaskElementMap.clear();
-    orderTasks();
+function drawTasks():void {
+    TaskList.resetDrawn();
+    TaskList.orderByStart();
     //TODO:sort by Start/End descending
     TaskList.calculateBackValues();
     let taskContainer = document.getElementById("taskContainer") as HTMLElement;
@@ -174,7 +152,6 @@ function drawTasks() {
     taskContainer.innerHTML = "";
 
     TaskList.forEach(task =>{
-        TaskElementMap.set(task.ID, task);
         if (task.isDrawn){
             return;
         }
@@ -229,6 +206,53 @@ function drawTasks() {
                 drawArrow(task);
             }
         }
+    });
+    //redraw any arrows that are not positioned correctly
+    window.dispatchEvent(new Event("resize"));
+}
+
+function drawArrow(Task:Task):void {
+    Task.Predecessor.forEach(Predecessor => {
+        const startElement = document.getElementById(Predecessor);
+        const endElement = document.getElementById(Task.ID);
+
+        if (startElement == null || endElement == null){
+            return;
+        }
+
+        // Get bounding rectangles for start and end elements
+        const startRect = startElement.getBoundingClientRect();
+        const endRect = endElement.getBoundingClientRect();
+
+        if (startElement == null || endElement == null){
+            return;
+        }
+
+        // Calculate the center of both elements (taking into account offsets within the page)
+        const startX = startRect.right;
+        const startY = startRect.top + startRect.height / 2;
+        const endX = endRect.left;
+        const endY = endRect.top + endRect.height / 2;
+
+        // Create the arrow (SVG line) dynamically
+        const arrow = document.createElement('div');
+        arrow.classList.add('arrow');
+        arrow.id = `arrow-${Predecessor}-${Task.ID}`;
+        const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+        const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
+        
+        // Set the CSS styles for the arrow
+        arrow.style.width = `${arrowWidth}px`;
+        arrow.style.height = '2px';
+        arrow.style.backgroundColor = ArrowColor;
+        arrow.style.position = 'absolute';
+        arrow.style.top = `${startY}px`;
+        arrow.style.left = `${startX}px`;
+        arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
+        arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
+        
+        // Append the arrow to the document
+        (document.getElementById("taskContainer") as HTMLElement).innerHTML += arrow.outerHTML;
     });
 }
 

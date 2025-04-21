@@ -19,3 +19,7 @@
     pointer-events: none;
     z-index: 10;
   }
+
+.Task{
+    min-width: 170px;
+}

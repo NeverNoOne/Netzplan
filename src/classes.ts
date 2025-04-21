@@ -21,7 +21,18 @@ class MyTaskList extends Array<Task> {
     return tmp;
   }
 
+  getTaskByID(ID: string) {
+    return this.find(task => task.ID == ID);
+  }
+
   add(task: Task) {
+    //check if task already exists
+    if(this.getTaskByID(task.ID) != undefined){
+        console.error("Task already exists", task.ID);
+        alert("Task already exists: " + task.ID);
+        return;
+    }
+
     //Task initialization Start, End values
     if (this.length == 0 || task.Predecessor.length == 0){
         task.Start = 0;
@@ -51,7 +62,7 @@ class MyTaskList extends Array<Task> {
   calculateBackValues(index:number = 0) {
     if (index >= this.length) return;
     this.calculateBackValues(index + 1);
-    console.log("calculateBackValues", index);
+    //console.log("calculateBackValues", index);
     let curTask:Task = this[index];
     
     if (this.length != 0){
@@ -75,11 +86,21 @@ class MyTaskList extends Array<Task> {
         
     });
   }
+
+  orderByStart(){
+    this.sort((a, b) => a.Start - b.Start);
+  }
+
+  resetDrawn(){
+    this.forEach(task => {
+        task.isDrawn = false;
+    });
+  }
 }
 
 
 class Task {
-    ID: any;
+    ID: string;
     Name: any;
     Duration: number;
     Predecessor: string[];
@@ -90,11 +111,11 @@ class Task {
     BackAnfang: number;
     BackEnde: number;
     Puffer: number;
-    constructor(ID:any, Name:any,Duration:number,Predecessor:string) {
-        this.ID = ID;
+    constructor(ID:string, Name:any,Duration:number,Predecessor:string) {
+        this.ID = ID.trim();
         this.Name = Name;
         this.Duration = Duration;
-        this.Predecessor = Predecessor.split(",").filter(x => x.trim() != "");
+        this.Predecessor = Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim());
         this.Parellel = false;
         this.isDrawn = false;
         this.Start = 0;
@@ -106,7 +127,7 @@ class Task {
 
     getHtml(){
         return `
-        <div class="d-inline-block p-3 text-center Task" id="${this.ID}">
+        <div class="col d-inline-block p-3 text-center Task" id="${this.ID}">
             <div class="row">
                 <div class="col-3 border rounded-topleft">
                     ${this.ID}
