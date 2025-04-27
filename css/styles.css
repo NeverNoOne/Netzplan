@@ -19,3 +19,15 @@
     pointer-events: none;
     z-index: 10;
   }
+
+.Task-horizontal {
+    min-width: 170px;
+    max-width: 220px;
+    align-self: center;
+}
+
+.Task-vertical {
+    min-width: 170px;
+    max-width: 15rem;
+    justify-self: center;
+}

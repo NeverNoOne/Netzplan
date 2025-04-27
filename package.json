@@ -1,0 +1,17 @@
+{
+  "name": "netzplan",
+  "version": "1.0.0",
+  "description": "> [!NOTE]\r > Dieses Repository befindet sich noch in der Entwicklung!\r > This repository is still in early development!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "esbuild src/script.ts --bundle --outfile=dist/script.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.25.1",
+    "typescript": "^5.8.2"
+  }
+}
