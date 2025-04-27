@@ -78,6 +78,12 @@
       });
     }
   };
+  var ValidationResult = class {
+    constructor(isValid, errorMessage) {
+      this.isValid = isValid;
+      this.errorMessage = errorMessage;
+    }
+  };
   var Task = class {
     constructor(ID, Name, Duration, Predecessor) {
       this.ID = ID.trim();
@@ -91,6 +97,24 @@
       this.BackAnfang = 0;
       this.BackEnde = 0;
       this.Puffer = 0;
+    }
+    static validateValues(ID, Name, Duration, Predecessor) {
+      let isValid = true;
+      let errorMessage = "";
+      if (ID.trim() == "") {
+        isValid = false;
+        errorMessage += "Keine ID angegeben, ";
+      }
+      if (Name.trim() == "") {
+        isValid = false;
+        errorMessage += "Keine Name angegeben, ";
+      }
+      if (Duration <= 0) {
+        isValid = false;
+        errorMessage += "Keine Dauer angegeben, ";
+      }
+      errorMessage = errorMessage.endsWith(", ") ? errorMessage.slice(0, -2) : errorMessage;
+      return new ValidationResult(isValid, errorMessage);
     }
     getHtmlElement_horizontal() {
       let element = document.createElement("div");
@@ -168,8 +192,17 @@
   // src/script.ts
   var ArrowColor = "WhiteSmoke";
   var ArrowPadding_Vertical = 5;
+  var errorModal = document.getElementById("errorModal");
+  var modalInstance = new window.bootstrap.Modal(errorModal);
+  var errorModalTitel = errorModal.querySelector(".modal-title");
+  var errorModalBody = errorModal.querySelector(".modal-body");
+  var errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary");
   window.addEventListener("resize", function() {
     reposition_arrows();
+  });
+  window.addEventListener("error", function(event) {
+    showErrorModal(event.message, "interner Fehler", "Ok");
+    console.error(event.message, event.error);
   });
   var TaskList = new MyTaskList([]);
   var CurOrientation = () => {
@@ -257,11 +290,19 @@
     };
     reader.readAsText(file);
   }
+  function changeOrientation() {
+    drawTasks();
+  }
   function addTask() {
     let ID = document.getElementById("ID").value;
     let Name = document.getElementById("Task").value;
     let Duration = Number(document.getElementById("Duration").value);
     let Predecessor = document.getElementById("Predecessor").value;
+    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor);
+    if (validationResult.isValid == false) {
+      showErrorModal(validationResult.errorMessage, "Eingabe-Fehler", "Ok");
+      return;
+    }
     let CurTask = new Task(ID, Name, Duration, Predecessor);
     TaskList.add(CurTask);
     drawTasks();
@@ -272,6 +313,12 @@
     document.getElementById("Task").value = "";
     document.getElementById("Duration").value = "";
     document.getElementById("Predecessor").value = "";
+  }
+  function showErrorModal(errorMessage, title = "Fehler", closeButtonText = "Ok") {
+    errorModalTitel.textContent = title;
+    errorModalBody.textContent = errorMessage;
+    errorModalCloseButton.textContent = closeButtonText;
+    modalInstance.show();
   }
   function drawTasks() {
     TaskList.resetDrawn();
@@ -391,4 +438,5 @@
   }
   window.readFile = readFile;
   window.addTask = addTask;
+  window.changeOrientation = changeOrientation;
 })();

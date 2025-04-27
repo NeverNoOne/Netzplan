@@ -1,9 +1,25 @@
 import { MyTaskList, Task } from "./classes";
 import { Orientation } from "./enums";
+//TODO: localization 
+//TODO: on Orientation change, redraw tasks
+
+//bootstrap declaration for modal so typescript does not throw an error
+declare global {
+    interface Window{
+        bootstrap: any;
+    }
+}
+
 //#region constants
 const ArrowColor = "WhiteSmoke";
 const ArrowColorPrimary = "Orange";
 const ArrowPadding_Vertical = 5; //px
+
+const errorModal = document.getElementById("errorModal") as HTMLElement;
+const modalInstance = new window.bootstrap.Modal(errorModal);
+const errorModalTitel = errorModal.querySelector(".modal-title") as HTMLElement;
+const errorModalBody = errorModal.querySelector(".modal-body") as HTMLElement;
+const errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary") as HTMLElement;
 //#endregion
 
 //#region eventListeners
@@ -11,6 +27,11 @@ const ArrowPadding_Vertical = 5; //px
 window.addEventListener("resize", function(){
     reposition_arrows();
 });
+
+window.addEventListener("error", function(event) {
+    showErrorModal(event.message, "interner Fehler", "Ok");
+    console.error(event.message, event.error);
+})
 //#endregion
 
 //#region variables
@@ -124,6 +145,9 @@ function readFile():void {
     //console.log(file);
     reader.readAsText(file);
 }
+function changeOrientation():void{
+    drawTasks();
+}
 
 function addTask():void {
     let ID = (document.getElementById("ID") as HTMLInputElement).value;
@@ -131,6 +155,13 @@ function addTask():void {
     let Duration = Number((document.getElementById("Duration") as HTMLInputElement).value);
     let Predecessor = (document.getElementById("Predecessor") as HTMLInputElement).value;
     
+    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor);
+    if (validationResult.isValid == false){
+        // alert(validationResult.errorMessage);
+        showErrorModal(validationResult.errorMessage, "Eingabe-Fehler", "Ok");
+        return;
+    }
+
     let CurTask = new Task(ID, Name, Duration, Predecessor);
     TaskList.add(CurTask);
 
@@ -145,17 +176,21 @@ function clearControl():void {
     (document.getElementById("Predecessor") as HTMLInputElement).value = "";
 }
 
+function showErrorModal(errorMessage:string, title:string = "Fehler", closeButtonText:string = "Ok"):void {
+    errorModalTitel.textContent = title;
+    errorModalBody.textContent = errorMessage;
+    errorModalCloseButton.textContent = closeButtonText;
+    modalInstance.show();
+}
+
 /**
-TODO:parallele Tasks darstellen done?
 TODO: Pfeile richtig darstellen
-TODO: Pfeile richtig darstellen bei mehreren Vorgängern
 TODO: bei mehr als 2 parallelen Tasks, testen ob alles richtig dargestellt wird
 TODO: primär Pfad kennzeichnen
 */
 function drawTasks():void {
     TaskList.resetDrawn();
     TaskList.orderByStart();
-    //TODO:sort by Start/End descending
     TaskList.calculateBackValues();
     let taskContainer = document.getElementById("taskContainer") as HTMLElement;
     if (taskContainer == null){
@@ -280,7 +315,6 @@ function drawTasks_vertical(taskContainer:HTMLElement):void {
     window.dispatchEvent(new Event("resize"));
 }
 
-//TODO: move positioning logic to resize function --> just create the arrow in this function
 function drawArrow(Task:Task):void {
     Task.Predecessor.forEach(Predecessor => {
         const startElement = document.getElementById(Predecessor);
@@ -291,6 +325,7 @@ function drawArrow(Task:Task):void {
         }
 
         if (startElement == null || endElement == null){
+            
             return;
         }
 
@@ -306,3 +341,4 @@ function drawArrow(Task:Task):void {
 
 (window as any).readFile = readFile;
 (window as any).addTask = addTask;
+(window as any).changeOrientation = changeOrientation;

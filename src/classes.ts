@@ -98,6 +98,14 @@ class MyTaskList extends Array<Task> {
   }
 }
 
+class ValidationResult{
+    isValid:boolean;
+    errorMessage:string;
+    constructor(isValid:boolean, errorMessage:string){
+        this.isValid = isValid;
+        this.errorMessage = errorMessage;
+    }
+}
 
 class Task {
     ID: string;
@@ -123,6 +131,26 @@ class Task {
         this.BackAnfang = 0;
         this.BackEnde = 0;
         this.Puffer = 0;
+    }
+
+    public static validateValues(ID:string, Name:any, Duration:number, Predecessor:string):ValidationResult{
+        let isValid = true;
+        let errorMessage = "";
+        if (ID.trim() == ""){
+            isValid = false;
+            errorMessage += "Keine ID angegeben, ";
+        }
+        if (Name.trim() == ""){
+            isValid = false;
+            errorMessage += "Keine Name angegeben, ";
+        }
+        if (Duration <= 0){
+            isValid = false;
+            errorMessage += "Keine Dauer angegeben, ";
+        }
+        errorMessage = errorMessage.endsWith(", ") ? errorMessage.slice(0, -2) : errorMessage;
+        //predecessor doesn't need to be validated, because it can be empty
+        return new ValidationResult(isValid, errorMessage);
     }
 
     getHtmlElement_horizontal():HTMLElement{
