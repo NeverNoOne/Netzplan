@@ -1,35 +1,30 @@
 import { MyTaskList, Task } from "./classes";
+import { Orientation } from "./enums";
 //#region constants
 const ArrowColor = "WhiteSmoke";
 const ArrowColorPrimary = "Orange";
+const ArrowPadding_Vertical = 5; //px
 //#endregion
 
 //#region eventListeners
 // Resize arrows when the window is resized
 window.addEventListener("resize", function(){
     reposition_arrows();
-    let firstTaskRect = document.getElementById(TaskList[0].ID)?.getBoundingClientRect();
-    if (firstTaskRect == null){
-        return;
-    }
-
-    for (let index = 0; index < TaskList.length; index++) {
-        const task = TaskList[index];
-        let tmpTaskRect = document.getElementById(task.ID)?.getBoundingClientRect()
-        if (tmpTaskRect == null){
-            continue;
-        }
-        if (tmpTaskRect.top > firstTaskRect?.top){
-            console.log("More than one row");
-            return;
-        }
-    }
-
 });
 //#endregion
 
 //#region variables
 var TaskList:MyTaskList = new MyTaskList([]);
+const CurOrientation = () => {
+    let element = document.getElementById("orientationSwitch") as HTMLInputElement;
+    if (element == null){
+        return Orientation.unknown;
+    }
+    if (element.checked){
+        return Orientation.Vertical;
+    }
+    return Orientation.Horizontal;
+}
 //#endregion
 
 //#region resize functions
@@ -63,11 +58,29 @@ function reposition_arrows():void{
         const startRect = startElement.getBoundingClientRect();
         const endRect = endElement.getBoundingClientRect();
 
-        // Calculate the center of both elements (taking into account offsets within the page)
-        const startX = startRect.right;
-        const startY = startRect.top + startRect.height / 2;
-        const endX = endRect.left;
-        const endY = endRect.top + endRect.height / 2;
+        // Calculate the center of both elements (taking into account offsets within the page) depending on the orientation
+        var startX
+        var startY
+        var endX
+        var endY
+        
+        if (CurOrientation() == Orientation.Vertical){
+            startX = startRect.left + startRect.width / 2;
+            startY = startRect.bottom;
+            endX = endRect.left + endRect.width / 2;
+            endY = endRect.top;
+            // Adjust the start and end Y positions to avoid overlap with the task boxes
+            startY += ArrowPadding_Vertical;
+            endY -= ArrowPadding_Vertical;
+        }
+        //defaults to horizontal
+        else{
+            startX = startRect.right;
+            startY = startRect.top + startRect.height / 2;
+            endX = endRect.left;
+            endY = endRect.top + endRect.height / 2;
+        }
+
 
         // calculate the arrow width and angle
         const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
@@ -151,6 +164,24 @@ function drawTasks():void {
     }
     taskContainer.innerHTML = "";
 
+    switch (CurOrientation()){
+        case Orientation.Horizontal:
+            taskContainer.classList = "row"
+            drawTasks_horizontally(taskContainer);
+            break;
+        case Orientation.Vertical:
+            taskContainer.classList = "container"
+            drawTasks_vertical(taskContainer);
+            break;
+        case Orientation.unknown:
+            console.error("Orientation is unknown");
+            taskContainer.classList = "row"
+            drawTasks_horizontally(taskContainer);
+            break;
+    }
+}
+
+function drawTasks_horizontally(taskContainer:HTMLElement):void {
     TaskList.forEach(task =>{
         if (task.isDrawn){
             return;
@@ -160,14 +191,61 @@ function drawTasks():void {
             //console.log(task.ID);
             //console.log(tmpTaskParallel);
             let tmpDiv = document.createElement("div");
-            tmpDiv.classList.add("row", "d-inline-block","p-3", "text-center", "Task", "parallele");
+            tmpDiv.classList.add("col","p-3", "text-center", "Task-horizontal");
             tmpDiv.style.marginLeft = "0.75rem";
             tmpDiv.style.marginRight = "0.75rem";
 
             //Tasks zeichnen
             tmpTaskParallel.forEach(t => {
                 TaskList[TaskList.indexOf(t)].isDrawn = true;
-                tmpDiv.innerHTML += t.getHtml();                    
+                tmpDiv.appendChild(t.getHtmlElement_vertical());
+            });
+            taskContainer.appendChild(tmpDiv);
+
+            //Pfeil zeichnen
+            tmpTaskParallel.forEach(t => {
+                drawArrow(t);
+            });
+        }
+        else{
+            taskContainer.appendChild(task.getHtmlElement_horizontal());
+            let tmpTaskElement = document.getElementById(task.ID) as HTMLElement;
+            if (task.Predecessor.length == 0){
+                tmpTaskElement.style.marginRight = "0.75rem";
+            }
+            else{
+                tmpTaskElement.style.marginLeft = "0.75rem";
+                tmpTaskElement.style.marginRight = "0.75rem";
+            }
+            task.isDrawn = true;
+            if (task.Predecessor.length != 0){
+                drawArrow(task);
+            }
+        }
+    });
+    //redraw any arrows that are not positioned correctly
+    window.dispatchEvent(new Event("resize"));
+}
+
+function drawTasks_vertical(taskContainer:HTMLElement):void {
+
+    TaskList.forEach(task =>{
+        if (task.isDrawn){
+            return;
+        }
+        if (task.Parellel && task.Predecessor.length != 0){
+            let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
+            //console.log(task.ID);
+            //console.log(tmpTaskParallel);
+            let tmpDiv = document.createElement("div");
+            tmpDiv.classList.add("row", "p-3", "text-center");
+            tmpDiv.style.minWidth = "150px";
+            tmpDiv.style.justifySelf = "center";
+
+            //Tasks zeichnen
+            tmpTaskParallel.forEach(t => {
+                TaskList[TaskList.indexOf(t)].isDrawn = true;
+                tmpDiv.appendChild(t.getHtmlElement_horizontal());
             });
             taskContainer.appendChild(tmpDiv);
 
@@ -189,28 +267,20 @@ function drawTasks():void {
             });
         }
         else{
-            taskContainer.innerHTML += task.getHtml();
-            let tmpTaskElement = document.getElementById(task.ID) as HTMLElement;
-            if (task.Predecessor.length == 0){
-                tmpTaskElement.style.marginRight = "0.75rem";
-            }
-            else{
-                tmpTaskElement.style.marginLeft = "0.75rem";
-                tmpTaskElement.style.marginRight = "0.75rem";
-            }
-            task.isDrawn = true;
-            //TaskList.indexOf(task) != TaskList.length - 1 || 
+            taskContainer.appendChild(task.getHtmlElement_vertical());
+
+            task.isDrawn = true; 
             if (task.Predecessor.length != 0){
-                //console.log(`Task: ${TaskList.indexOf(task)} - ${TaskList.length}`);
-                //document.getElementById("taskContainer").innerHTML += Arrow(0);
                 drawArrow(task);
             }
         }
     });
+
     //redraw any arrows that are not positioned correctly
     window.dispatchEvent(new Event("resize"));
 }
 
+//TODO: move positioning logic to resize function --> just create the arrow in this function
 function drawArrow(Task:Task):void {
     Task.Predecessor.forEach(Predecessor => {
         const startElement = document.getElementById(Predecessor);
@@ -220,36 +290,14 @@ function drawArrow(Task:Task):void {
             return;
         }
 
-        // Get bounding rectangles for start and end elements
-        const startRect = startElement.getBoundingClientRect();
-        const endRect = endElement.getBoundingClientRect();
-
         if (startElement == null || endElement == null){
             return;
         }
-
-        // Calculate the center of both elements (taking into account offsets within the page)
-        const startX = startRect.right;
-        const startY = startRect.top + startRect.height / 2;
-        const endX = endRect.left;
-        const endY = endRect.top + endRect.height / 2;
 
         // Create the arrow (SVG line) dynamically
         const arrow = document.createElement('div');
         arrow.classList.add('arrow');
         arrow.id = `arrow-${Predecessor}-${Task.ID}`;
-        const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-        const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
-        
-        // Set the CSS styles for the arrow
-        arrow.style.width = `${arrowWidth}px`;
-        arrow.style.height = '2px';
-        arrow.style.backgroundColor = ArrowColor;
-        arrow.style.position = 'absolute';
-        arrow.style.top = `${startY}px`;
-        arrow.style.left = `${startX}px`;
-        arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
-        arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
         
         // Append the arrow to the document
         (document.getElementById("taskContainer") as HTMLElement).innerHTML += arrow.outerHTML;

@@ -125,46 +125,96 @@ class Task {
         this.Puffer = 0;
     }
 
-    getHtml(){
-        return `
-        <div class="col d-inline-block p-3 text-center Task" id="${this.ID}">
-            <div class="row">
-                <div class="col-3 border rounded-topleft">
-                    ${this.ID}
-                </div>
-                <div class="col border rounded-topright">
-                    ${this.Name}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border">
-                    ${this.Start}
-                </div>
-                <div class="col-3 border">
-                    ${this.Duration}
-                </div>
-                <div class="col-3 border">
-                    
-                </div>
-                <div class="col-3 border">
-                    ${this.End}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border rounded-bottomleft">
-                    ${this.BackAnfang}
-                </div>
-                <div class="col-3 border">
-                    ${this.Puffer}
-                </div>
-                <div class="col-3 border">
-                    ${this.Puffer}
-                </div>
-                <div class="col-3 border rounded-bottomright">
-                    ${this.BackEnde}
-                </div>
-            </div>
-        </div>
-        `;
+    getHtmlElement_horizontal():HTMLElement{
+        let element = document.createElement("div");
+        element.className = "col p-3 text-center Task-horizontal";
+        element.id = this.ID;
+
+        //first row
+        let row1 = this.getNewRow([
+            this.getNewCol("col-3 border rounded-topleft", this.ID),
+            this.getNewCol("col border rounded-topright", this.Name)
+        ])
+        element.appendChild(row1);
+
+        //second row
+        let row2 = this.getNewRow([
+            this.getNewCol("col-3 border", this.Start.toString()),
+            this.getNewCol("col-3 border", this.Duration.toString()),
+            this.getNewCol("col-3 border", ""),
+            this.getNewCol("col-3 border", this.End.toString())
+        ]);
+        element.appendChild(row2);
+
+        //third row
+        let row3 = this.getNewRow([
+            this.getNewCol("col-3 border rounded-bottomleft", this.BackAnfang.toString()),
+            this.getNewCol("col-3 border", this.Puffer.toString()),
+            this.getNewCol("col-3 border", this.Puffer.toString()),
+            this.getNewCol("col-3 border rounded-bottomright", this.BackEnde.toString())
+        ]);
+        element.appendChild(row3);
+
+        return element;
+    }
+
+    getHtmlElement_vertical():HTMLElement{
+        let parentElement = document.createElement("div");
+        parentElement.className = "row container Task-vertical";
+        
+        let element = document.createElement("div");
+        element.className = "m-3 text-center";
+        element.id = this.ID;
+
+        //first row
+        let row1 = this.getNewRow([
+            this.getNewCol("col-3 border rounded-topleft", this.ID),
+            this.getNewCol("col border rounded-topright", this.Name)
+        ])
+        element.appendChild(row1);
+
+        //second row
+        let row2 = this.getNewRow([
+            this.getNewCol("col-3 border", this.Start.toString()),
+            this.getNewCol("col-3 border", this.Duration.toString()),
+            this.getNewCol("col-3 border", ""),
+            this.getNewCol("col-3 border", this.End.toString())
+        ]);
+        element.appendChild(row2);
+
+        //third row
+        let row3 = this.getNewRow([
+            this.getNewCol("col-3 border rounded-bottomleft", this.BackAnfang.toString()),
+            this.getNewCol("col-3 border", this.Puffer.toString()),
+            this.getNewCol("col-3 border", this.Puffer.toString()),
+            this.getNewCol("col-3 border rounded-bottomright", this.BackEnde.toString())
+        ]);
+        element.appendChild(row3);
+
+        parentElement.appendChild(element);
+
+        return parentElement;
+    }
+
+    private getNewRow(cols:HTMLElement[], className:string=""):HTMLElement{
+        let row = document.createElement("div");
+        if (className != ""){
+            row.className = className;
+        }
+        else{
+            row.className = "row";
+        }
+        cols.forEach(col => {
+            row.appendChild(col);
+        });
+
+        return row;
+    }
+
+    private getNewCol(className:string, content:string):HTMLElement{
+        let col = document.createElement("div");
+        col.className = className;
+        col.innerHTML = content;
+        return col;
     }
 }

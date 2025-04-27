@@ -92,71 +92,96 @@
       this.BackEnde = 0;
       this.Puffer = 0;
     }
-    getHtml() {
-      return `
-        <div class="col d-inline-block p-3 text-center Task" id="${this.ID}">
-            <div class="row">
-                <div class="col-3 border rounded-topleft">
-                    ${this.ID}
-                </div>
-                <div class="col border rounded-topright">
-                    ${this.Name}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border">
-                    ${this.Start}
-                </div>
-                <div class="col-3 border">
-                    ${this.Duration}
-                </div>
-                <div class="col-3 border">
-                    
-                </div>
-                <div class="col-3 border">
-                    ${this.End}
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-3 border rounded-bottomleft">
-                    ${this.BackAnfang}
-                </div>
-                <div class="col-3 border">
-                    ${this.Puffer}
-                </div>
-                <div class="col-3 border">
-                    ${this.Puffer}
-                </div>
-                <div class="col-3 border rounded-bottomright">
-                    ${this.BackEnde}
-                </div>
-            </div>
-        </div>
-        `;
+    getHtmlElement_horizontal() {
+      let element = document.createElement("div");
+      element.className = "col p-3 text-center Task-horizontal";
+      element.id = this.ID;
+      let row1 = this.getNewRow([
+        this.getNewCol("col-3 border rounded-topleft", this.ID),
+        this.getNewCol("col border rounded-topright", this.Name)
+      ]);
+      element.appendChild(row1);
+      let row2 = this.getNewRow([
+        this.getNewCol("col-3 border", this.Start.toString()),
+        this.getNewCol("col-3 border", this.Duration.toString()),
+        this.getNewCol("col-3 border", ""),
+        this.getNewCol("col-3 border", this.End.toString())
+      ]);
+      element.appendChild(row2);
+      let row3 = this.getNewRow([
+        this.getNewCol("col-3 border rounded-bottomleft", this.BackAnfang.toString()),
+        this.getNewCol("col-3 border", this.Puffer.toString()),
+        this.getNewCol("col-3 border", this.Puffer.toString()),
+        this.getNewCol("col-3 border rounded-bottomright", this.BackEnde.toString())
+      ]);
+      element.appendChild(row3);
+      return element;
+    }
+    getHtmlElement_vertical() {
+      let parentElement = document.createElement("div");
+      parentElement.className = "row container Task-vertical";
+      let element = document.createElement("div");
+      element.className = "m-3 text-center";
+      element.id = this.ID;
+      let row1 = this.getNewRow([
+        this.getNewCol("col-3 border rounded-topleft", this.ID),
+        this.getNewCol("col border rounded-topright", this.Name)
+      ]);
+      element.appendChild(row1);
+      let row2 = this.getNewRow([
+        this.getNewCol("col-3 border", this.Start.toString()),
+        this.getNewCol("col-3 border", this.Duration.toString()),
+        this.getNewCol("col-3 border", ""),
+        this.getNewCol("col-3 border", this.End.toString())
+      ]);
+      element.appendChild(row2);
+      let row3 = this.getNewRow([
+        this.getNewCol("col-3 border rounded-bottomleft", this.BackAnfang.toString()),
+        this.getNewCol("col-3 border", this.Puffer.toString()),
+        this.getNewCol("col-3 border", this.Puffer.toString()),
+        this.getNewCol("col-3 border rounded-bottomright", this.BackEnde.toString())
+      ]);
+      element.appendChild(row3);
+      parentElement.appendChild(element);
+      return parentElement;
+    }
+    getNewRow(cols, className = "") {
+      let row = document.createElement("div");
+      if (className != "") {
+        row.className = className;
+      } else {
+        row.className = "row";
+      }
+      cols.forEach((col) => {
+        row.appendChild(col);
+      });
+      return row;
+    }
+    getNewCol(className, content) {
+      let col = document.createElement("div");
+      col.className = className;
+      col.innerHTML = content;
+      return col;
     }
   };
 
   // src/script.ts
   var ArrowColor = "WhiteSmoke";
+  var ArrowPadding_Vertical = 5;
   window.addEventListener("resize", function() {
     reposition_arrows();
-    let firstTaskRect = document.getElementById(TaskList[0].ID)?.getBoundingClientRect();
-    if (firstTaskRect == null) {
-      return;
-    }
-    for (let index = 0; index < TaskList.length; index++) {
-      const task = TaskList[index];
-      let tmpTaskRect = document.getElementById(task.ID)?.getBoundingClientRect();
-      if (tmpTaskRect == null) {
-        continue;
-      }
-      if (tmpTaskRect.top > firstTaskRect?.top) {
-        console.log("More than one row");
-        return;
-      }
-    }
   });
   var TaskList = new MyTaskList([]);
+  var CurOrientation = () => {
+    let element = document.getElementById("orientationSwitch");
+    if (element == null) {
+      return 0 /* unknown */;
+    }
+    if (element.checked) {
+      return 2 /* Vertical */;
+    }
+    return 1 /* Horizontal */;
+  };
   function reposition_arrows() {
     for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
       const arrow = document.getElementsByClassName("arrow").item(index);
@@ -182,10 +207,23 @@
       }
       const startRect = startElement.getBoundingClientRect();
       const endRect = endElement.getBoundingClientRect();
-      const startX = startRect.right;
-      const startY = startRect.top + startRect.height / 2;
-      const endX = endRect.left;
-      const endY = endRect.top + endRect.height / 2;
+      var startX;
+      var startY;
+      var endX;
+      var endY;
+      if (CurOrientation() == 2 /* Vertical */) {
+        startX = startRect.left + startRect.width / 2;
+        startY = startRect.bottom;
+        endX = endRect.left + endRect.width / 2;
+        endY = endRect.top;
+        startY += ArrowPadding_Vertical;
+        endY -= ArrowPadding_Vertical;
+      } else {
+        startX = startRect.right;
+        startY = startRect.top + startRect.height / 2;
+        endX = endRect.left;
+        endY = endRect.top + endRect.height / 2;
+      }
       const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
       const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
       arrow.style.width = `${arrowWidth}px`;
@@ -245,6 +283,23 @@
       return;
     }
     taskContainer.innerHTML = "";
+    switch (CurOrientation()) {
+      case 1 /* Horizontal */:
+        taskContainer.classList = "row";
+        drawTasks_horizontally(taskContainer);
+        break;
+      case 2 /* Vertical */:
+        taskContainer.classList = "container";
+        drawTasks_vertical(taskContainer);
+        break;
+      case 0 /* unknown */:
+        console.error("Orientation is unknown");
+        taskContainer.classList = "row";
+        drawTasks_horizontally(taskContainer);
+        break;
+    }
+  }
+  function drawTasks_horizontally(taskContainer) {
     TaskList.forEach((task) => {
       if (task.isDrawn) {
         return;
@@ -252,28 +307,19 @@
       if (task.Parellel && task.Predecessor.length != 0) {
         let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
         let tmpDiv = document.createElement("div");
-        tmpDiv.classList.add("row", "d-inline-block", "p-3", "text-center", "Task", "parallele");
+        tmpDiv.classList.add("col", "p-3", "text-center", "Task-horizontal");
         tmpDiv.style.marginLeft = "0.75rem";
         tmpDiv.style.marginRight = "0.75rem";
         tmpTaskParallel.forEach((t) => {
           TaskList[TaskList.indexOf(t)].isDrawn = true;
-          tmpDiv.innerHTML += t.getHtml();
+          tmpDiv.appendChild(t.getHtmlElement_vertical());
         });
         taskContainer.appendChild(tmpDiv);
-        tmpTaskParallel.forEach((t) => {
-          let tmpTaskElement = document.getElementById(t.ID);
-          if (t.Predecessor.length == 0) {
-            tmpTaskElement.style.marginRight = "0.75rem";
-          } else {
-            tmpTaskElement.style.marginLeft = "0.75rem";
-            tmpTaskElement.style.marginRight = "0.75rem";
-          }
-        });
         tmpTaskParallel.forEach((t) => {
           drawArrow(t);
         });
       } else {
-        taskContainer.innerHTML += task.getHtml();
+        taskContainer.appendChild(task.getHtmlElement_horizontal());
         let tmpTaskElement = document.getElementById(task.ID);
         if (task.Predecessor.length == 0) {
           tmpTaskElement.style.marginRight = "0.75rem";
@@ -289,6 +335,44 @@
     });
     window.dispatchEvent(new Event("resize"));
   }
+  function drawTasks_vertical(taskContainer) {
+    TaskList.forEach((task) => {
+      if (task.isDrawn) {
+        return;
+      }
+      if (task.Parellel && task.Predecessor.length != 0) {
+        let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
+        let tmpDiv = document.createElement("div");
+        tmpDiv.classList.add("row", "p-3", "text-center");
+        tmpDiv.style.minWidth = "150px";
+        tmpDiv.style.justifySelf = "center";
+        tmpTaskParallel.forEach((t) => {
+          TaskList[TaskList.indexOf(t)].isDrawn = true;
+          tmpDiv.appendChild(t.getHtmlElement_horizontal());
+        });
+        taskContainer.appendChild(tmpDiv);
+        tmpTaskParallel.forEach((t) => {
+          let tmpTaskElement = document.getElementById(t.ID);
+          if (t.Predecessor.length == 0) {
+            tmpTaskElement.style.marginRight = "0.75rem";
+          } else {
+            tmpTaskElement.style.marginLeft = "0.75rem";
+            tmpTaskElement.style.marginRight = "0.75rem";
+          }
+        });
+        tmpTaskParallel.forEach((t) => {
+          drawArrow(t);
+        });
+      } else {
+        taskContainer.appendChild(task.getHtmlElement_vertical());
+        task.isDrawn = true;
+        if (task.Predecessor.length != 0) {
+          drawArrow(task);
+        }
+      }
+    });
+    window.dispatchEvent(new Event("resize"));
+  }
   function drawArrow(Task2) {
     Task2.Predecessor.forEach((Predecessor) => {
       const startElement = document.getElementById(Predecessor);
@@ -296,28 +380,12 @@
       if (startElement == null || endElement == null) {
         return;
       }
-      const startRect = startElement.getBoundingClientRect();
-      const endRect = endElement.getBoundingClientRect();
       if (startElement == null || endElement == null) {
         return;
       }
-      const startX = startRect.right;
-      const startY = startRect.top + startRect.height / 2;
-      const endX = endRect.left;
-      const endY = endRect.top + endRect.height / 2;
       const arrow = document.createElement("div");
       arrow.classList.add("arrow");
       arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
-      const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-      const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
-      arrow.style.width = `${arrowWidth}px`;
-      arrow.style.height = "2px";
-      arrow.style.backgroundColor = ArrowColor;
-      arrow.style.position = "absolute";
-      arrow.style.top = `${startY}px`;
-      arrow.style.left = `${startX}px`;
-      arrow.style.transformOrigin = "0 50%";
-      arrow.style.transform = `rotate(${angle}deg)`;
       document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
     });
   }

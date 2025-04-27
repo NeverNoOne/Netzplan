@@ -9,7 +9,7 @@
     </head>
     <body>
         <a href="https://github.com/NeverNoOne/Netzplan" class="btn btn-secondary">zum Quellcode</a>
-        <div class="container text-center mb-5">
+        <div class="container text-center">
             <div id="head" class="row mb-5 mt-5">
                 <h1>Netzplan-Generator</h1>
                 <!-- <button hidden class="btn btn-primary" onclick="showAllTasks()">show all Tasks</button> -->
@@ -25,6 +25,10 @@
                     <input id="Duration" type="text" class="form-control" placeholder="Dauer" aria-label="Dauer" aria-describedby="addon-wrapping">
                     <input id="Predecessor" type="text" class="form-control" placeholder="Vorgänger ID" aria-label="Vorgänger ID" aria-describedby="addon-wrapping">
                     <button class="btn btn-primary" type="button" onclick="addTask()">Hinzufügen</button>
+                </div>
+                <div class="form-check form-switch text-start m-3">
+                    <input class="form-check-input" type="checkbox" role="switch" id="orientationSwitch">
+                    <label class="form-check-label" for="orientationSwitch">Vertikale Darstellung</label>
                 </div>
             </div>
         </div>
