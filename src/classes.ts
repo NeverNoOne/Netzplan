@@ -82,7 +82,7 @@ class MyTaskList extends Array<Task> {
 
     curTask.Predecessor.forEach(pre => {
         let tmpTaskList = this.filter(task => task.Predecessor.includes(pre));
-        curTask.Parellel = tmpTaskList.length > 1;
+        curTask.Parallel = tmpTaskList.length > 1;
         
     });
   }
@@ -112,7 +112,7 @@ class Task {
     Name: any;
     Duration: number;
     Predecessor: string[];
-    Parellel: boolean;
+    Parallel: boolean;
     isDrawn: boolean;
     Start: number;
     End: number;
@@ -124,7 +124,7 @@ class Task {
         this.Name = Name;
         this.Duration = Duration;
         this.Predecessor = Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim());
-        this.Parellel = false;
+        this.Parallel = false;
         this.isDrawn = false;
         this.Start = 0;
         this.End = 0;

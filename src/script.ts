@@ -17,7 +17,7 @@ const ArrowPadding_Vertical = 5; //px
 
 const errorModal = document.getElementById("errorModal") as HTMLElement;
 const modalInstance = new window.bootstrap.Modal(errorModal);
-const errorModalTitel = errorModal.querySelector(".modal-title") as HTMLElement;
+const errorModalTitle = errorModal.querySelector(".modal-title") as HTMLElement;
 const errorModalBody = errorModal.querySelector(".modal-body") as HTMLElement;
 const errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary") as HTMLElement;
 //#endregion
@@ -177,7 +177,7 @@ function clearControl():void {
 }
 
 function showErrorModal(errorMessage:string, title:string = "Fehler", closeButtonText:string = "Ok"):void {
-    errorModalTitel.textContent = title;
+    errorModalTitle.textContent = title;
     errorModalBody.textContent = errorMessage;
     errorModalCloseButton.textContent = closeButtonText;
     modalInstance.show();
@@ -221,7 +221,7 @@ function drawTasks_horizontally(taskContainer:HTMLElement):void {
         if (task.isDrawn){
             return;
         }
-        if (task.Parellel && task.Predecessor.length != 0){
+        if (task.Parallel && task.Predecessor.length != 0){
             let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
             //console.log(task.ID);
             //console.log(tmpTaskParallel);
@@ -268,7 +268,7 @@ function drawTasks_vertical(taskContainer:HTMLElement):void {
         if (task.isDrawn){
             return;
         }
-        if (task.Parellel && task.Predecessor.length != 0){
+        if (task.Parallel && task.Predecessor.length != 0){
             let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
             //console.log(task.ID);
             //console.log(tmpTaskParallel);
@@ -321,11 +321,6 @@ function drawArrow(Task:Task):void {
         const endElement = document.getElementById(Task.ID);
 
         if (startElement == null || endElement == null){
-            return;
-        }
-
-        if (startElement == null || endElement == null){
-            
             return;
         }
 
