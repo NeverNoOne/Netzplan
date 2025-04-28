@@ -8,7 +8,11 @@
         <link rel="stylesheet" href="css/styles.css">
     </head>
     <body>
-        <a href="https://github.com/NeverNoOne/Netzplan" class="btn btn-secondary">zum Quellcode</a>
+        <a href="https://github.com/NeverNoOne/Netzplan" class="btn btn-secondary" style="margin: 5px; float: right;">zum Quellcode</a>
+        
+        <button class="btn btn-primary sticky-top" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTasks" aria-controls="offcanvasTasks" style="margin: 5px;" onclick="populateTaskTable()">
+            Aufgaben anzeigen
+        </button>
         <div class="container text-center">
             <div id="head" class="row mb-5 mt-5">
                 <h1>Netzplan-Generator</h1>
@@ -47,6 +51,29 @@
                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Ok</button>
                     </div>
                 </div>
+            </div>
+        </div>
+        <!-- Offcanvas -->
+        <div class="offcanvas offcanvas-start" id="offcanvasTasks" data-bs-scroll="true" tabindex="-1" aria-labelledby="offcanvasTasksLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="offcanvasTasksLabel">aktuelle Aufgaben</h5>
+                <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body text-center">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Aufgabe</th>
+                            <th scope="col">Dauer</th>
+                            <th scope="col">Vorgänger ID</th>
+                            <th scope="col"></th><!-- Button zum Löschen der Aufgabe -->
+                        </tr>
+                    </thead>
+                    <tbody id="taskTableBody">
+                        <!-- Aufgaben kommen hierhin -->
+                    </tbody>
+                </table>
             </div>
         </div>
         <div class="container">

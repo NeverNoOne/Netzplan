@@ -1,12 +1,12 @@
 "use strict";
 (() => {
   // src/classes.ts
-  var MyTaskList = class _MyTaskList extends Array {
+  var TaskListManager = class _TaskListManager extends Array {
     constructor(tasks = []) {
       super(...Array.isArray(tasks) ? tasks : []);
     }
     static fromCSV(csv) {
-      let tmp = new _MyTaskList([]);
+      let tmp = new _TaskListManager([]);
       let lines = csv.split("\r\n");
       for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];
@@ -66,7 +66,7 @@
       }
       curTask.Predecessor.forEach((pre) => {
         let tmpTaskList = this.filter((task) => task.Predecessor.includes(pre));
-        curTask.Parellel = tmpTaskList.length > 1;
+        curTask.Parallel = tmpTaskList.length > 1;
       });
     }
     orderByStart() {
@@ -90,7 +90,7 @@
       this.Name = Name;
       this.Duration = Duration;
       this.Predecessor = Predecessor.split(",").filter((x) => x.trim() != "").map((x) => x.trim());
-      this.Parellel = false;
+      this.Parallel = false;
       this.isDrawn = false;
       this.Start = 0;
       this.End = 0;
@@ -194,9 +194,10 @@
   var ArrowPadding_Vertical = 5;
   var errorModal = document.getElementById("errorModal");
   var modalInstance = new window.bootstrap.Modal(errorModal);
-  var errorModalTitel = errorModal.querySelector(".modal-title");
+  var errorModalTitle = errorModal.querySelector(".modal-title");
   var errorModalBody = errorModal.querySelector(".modal-body");
   var errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary");
+  var taskTable = document.getElementById("taskTableBody");
   window.addEventListener("resize", function() {
     reposition_arrows();
   });
@@ -204,7 +205,7 @@
     showErrorModal(event.message, "interner Fehler", "Ok");
     console.error(event.message, event.error);
   });
-  var TaskList = new MyTaskList([]);
+  var TaskList = new TaskListManager([]);
   var CurOrientation = () => {
     let element = document.getElementById("orientationSwitch");
     if (element == null) {
@@ -285,7 +286,7 @@
       if (reader.result == null) {
         return;
       }
-      TaskList = MyTaskList.fromCSV(reader.result);
+      TaskList = TaskListManager.fromCSV(reader.result);
       drawTasks();
     };
     reader.readAsText(file);
@@ -315,7 +316,7 @@
     document.getElementById("Predecessor").value = "";
   }
   function showErrorModal(errorMessage, title = "Fehler", closeButtonText = "Ok") {
-    errorModalTitel.textContent = title;
+    errorModalTitle.textContent = title;
     errorModalBody.textContent = errorMessage;
     errorModalCloseButton.textContent = closeButtonText;
     modalInstance.show();
@@ -351,7 +352,7 @@
       if (task.isDrawn) {
         return;
       }
-      if (task.Parellel && task.Predecessor.length != 0) {
+      if (task.Parallel && task.Predecessor.length != 0) {
         let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
         let tmpDiv = document.createElement("div");
         tmpDiv.classList.add("col", "p-3", "text-center", "Task-horizontal");
@@ -387,7 +388,7 @@
       if (task.isDrawn) {
         return;
       }
-      if (task.Parellel && task.Predecessor.length != 0) {
+      if (task.Parallel && task.Predecessor.length != 0) {
         let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
         let tmpDiv = document.createElement("div");
         tmpDiv.classList.add("row", "p-3", "text-center");
@@ -427,16 +428,30 @@
       if (startElement == null || endElement == null) {
         return;
       }
-      if (startElement == null || endElement == null) {
-        return;
-      }
       const arrow = document.createElement("div");
       arrow.classList.add("arrow");
       arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
       document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
     });
   }
+  function populateTaskTable() {
+    taskTable.innerHTML = "";
+    TaskList.forEach((task) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+            <td>${task.ID}</td>
+            <td>${task.Name}</td>
+            <td>${task.Duration}</td>
+            <td>${task.Predecessor.join(", ")}</td>
+            <td>
+                <button type="button" class="btn-close"></button>
+            </td>
+        `;
+      taskTable.appendChild(row);
+    });
+  }
   window.readFile = readFile;
   window.addTask = addTask;
   window.changeOrientation = changeOrientation;
+  window.populateTaskTable = populateTaskTable;
 })();

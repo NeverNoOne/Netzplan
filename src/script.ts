@@ -1,4 +1,4 @@
-import { MyTaskList, Task } from "./classes";
+import { TaskListManager, Task } from "./classes";
 import { Orientation } from "./enums";
 //TODO: localization 
 //TODO: on Orientation change, redraw tasks
@@ -20,6 +20,8 @@ const modalInstance = new window.bootstrap.Modal(errorModal);
 const errorModalTitle = errorModal.querySelector(".modal-title") as HTMLElement;
 const errorModalBody = errorModal.querySelector(".modal-body") as HTMLElement;
 const errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary") as HTMLElement;
+
+const taskTable = document.getElementById("taskTableBody") as HTMLElement;
 //#endregion
 
 //#region eventListeners
@@ -35,7 +37,7 @@ window.addEventListener("error", function(event) {
 //#endregion
 
 //#region variables
-var TaskList:MyTaskList = new MyTaskList([]);
+var TaskList:TaskListManager = new TaskListManager([]);
 const CurOrientation = () => {
     let element = document.getElementById("orientationSwitch") as HTMLInputElement;
     if (element == null){
@@ -139,7 +141,7 @@ function readFile():void {
             return;
         }
         //mapCSVtoTasks(reader.result);
-        TaskList = MyTaskList.fromCSV(reader.result as string);
+        TaskList = TaskListManager.fromCSV(reader.result as string);
         drawTasks();
     }
     //console.log(file);
@@ -334,6 +336,28 @@ function drawArrow(Task:Task):void {
     });
 }
 
+//TODO: remove this function and use the TaskListManager to populate the table
+//TODO: implement remove task function
+function populateTaskTable():void{
+    taskTable.innerHTML = ""; // Clear the table body
+
+    TaskList.forEach(task => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${task.ID}</td>
+            <td>${task.Name}</td>
+            <td>${task.Duration}</td>
+            <td>${task.Predecessor.join(", ")}</td>
+            <td>
+                <button type="button" class="btn-close"></button>
+            </td>
+        `;
+        taskTable.appendChild(row);
+    });
+
+}
+
 (window as any).readFile = readFile;
 (window as any).addTask = addTask;
 (window as any).changeOrientation = changeOrientation;
+(window as any).populateTaskTable = populateTaskTable;

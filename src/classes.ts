@@ -1,12 +1,12 @@
-export { MyTaskList, Task };
-/* TODO: Better Name */
-class MyTaskList extends Array<Task> {
+export { TaskListManager , Task };
+
+class TaskListManager extends Array<Task> {
   constructor(tasks: Task[] = []) {
     super(...(Array.isArray(tasks) ? tasks : []));
   }
 
   public static fromCSV(csv: string) {
-    let tmp = new MyTaskList([]);
+    let tmp = new TaskListManager([]);
     let lines = csv.split("\r\n");
     for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];
