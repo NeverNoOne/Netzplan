@@ -22,10 +22,11 @@ const errorModalBody = errorModal.querySelector(".modal-body") as HTMLElement;
 const errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary") as HTMLElement;
 
 const taskTable = document.getElementById("taskTableBody") as HTMLElement;
+const orientationSwitch = document.getElementById("orientationSwitch") as HTMLInputElement;
+const taskContainer = document.getElementById("taskContainer") as HTMLElement;
 //#endregion
 
 //#region eventListeners
-// Resize arrows when the window is resized
 window.addEventListener("resize", function(){
     reposition_arrows();
 });
@@ -39,11 +40,10 @@ window.addEventListener("error", function(event) {
 //#region variables
 var TaskList:TaskListManager = new TaskListManager([]);
 const CurOrientation = () => {
-    let element = document.getElementById("orientationSwitch") as HTMLInputElement;
-    if (element == null){
+    if (orientationSwitch == null){
         return Orientation.unknown;
     }
-    if (element.checked){
+    if (orientationSwitch.checked){
         return Orientation.Vertical;
     }
     return Orientation.Horizontal;
@@ -194,7 +194,6 @@ function drawTasks():void {
     TaskList.resetDrawn();
     TaskList.orderByStart();
     TaskList.calculateBackValues();
-    let taskContainer = document.getElementById("taskContainer") as HTMLElement;
     if (taskContainer == null){
         console.error("taskContainer is null");
         return;
@@ -332,7 +331,7 @@ function drawArrow(Task:Task):void {
         arrow.id = `arrow-${Predecessor}-${Task.ID}`;
         
         // Append the arrow to the document
-        (document.getElementById("taskContainer") as HTMLElement).innerHTML += arrow.outerHTML;
+        taskContainer.innerHTML += arrow.outerHTML;
     });
 }
 
@@ -340,6 +339,15 @@ function drawArrow(Task:Task):void {
 //TODO: implement remove task function
 function populateTaskTable():void{
     taskTable.innerHTML = ""; // Clear the table body
+
+    if (TaskList == null || TaskList.length == 0){
+        let element = document.createElement("td");
+        element.colSpan = 5;
+        element.textContent = "Keine Aufgaben gefunden";
+        
+        taskTable.appendChild(element);
+        return;
+    }
 
     TaskList.forEach(task => {
         const row = document.createElement("tr");

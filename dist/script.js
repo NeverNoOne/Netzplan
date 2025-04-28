@@ -198,6 +198,8 @@
   var errorModalBody = errorModal.querySelector(".modal-body");
   var errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySelector(".btn-primary");
   var taskTable = document.getElementById("taskTableBody");
+  var orientationSwitch = document.getElementById("orientationSwitch");
+  var taskContainer = document.getElementById("taskContainer");
   window.addEventListener("resize", function() {
     reposition_arrows();
   });
@@ -207,11 +209,10 @@
   });
   var TaskList = new TaskListManager([]);
   var CurOrientation = () => {
-    let element = document.getElementById("orientationSwitch");
-    if (element == null) {
+    if (orientationSwitch == null) {
       return 0 /* unknown */;
     }
-    if (element.checked) {
+    if (orientationSwitch.checked) {
       return 2 /* Vertical */;
     }
     return 1 /* Horizontal */;
@@ -325,7 +326,6 @@
     TaskList.resetDrawn();
     TaskList.orderByStart();
     TaskList.calculateBackValues();
-    let taskContainer = document.getElementById("taskContainer");
     if (taskContainer == null) {
       console.error("taskContainer is null");
       return;
@@ -347,7 +347,7 @@
         break;
     }
   }
-  function drawTasks_horizontally(taskContainer) {
+  function drawTasks_horizontally(taskContainer2) {
     TaskList.forEach((task) => {
       if (task.isDrawn) {
         return;
@@ -362,12 +362,12 @@
           TaskList[TaskList.indexOf(t)].isDrawn = true;
           tmpDiv.appendChild(t.getHtmlElement_vertical());
         });
-        taskContainer.appendChild(tmpDiv);
+        taskContainer2.appendChild(tmpDiv);
         tmpTaskParallel.forEach((t) => {
           drawArrow(t);
         });
       } else {
-        taskContainer.appendChild(task.getHtmlElement_horizontal());
+        taskContainer2.appendChild(task.getHtmlElement_horizontal());
         let tmpTaskElement = document.getElementById(task.ID);
         if (task.Predecessor.length == 0) {
           tmpTaskElement.style.marginRight = "0.75rem";
@@ -383,7 +383,7 @@
     });
     window.dispatchEvent(new Event("resize"));
   }
-  function drawTasks_vertical(taskContainer) {
+  function drawTasks_vertical(taskContainer2) {
     TaskList.forEach((task) => {
       if (task.isDrawn) {
         return;
@@ -398,7 +398,7 @@
           TaskList[TaskList.indexOf(t)].isDrawn = true;
           tmpDiv.appendChild(t.getHtmlElement_horizontal());
         });
-        taskContainer.appendChild(tmpDiv);
+        taskContainer2.appendChild(tmpDiv);
         tmpTaskParallel.forEach((t) => {
           let tmpTaskElement = document.getElementById(t.ID);
           if (t.Predecessor.length == 0) {
@@ -412,7 +412,7 @@
           drawArrow(t);
         });
       } else {
-        taskContainer.appendChild(task.getHtmlElement_vertical());
+        taskContainer2.appendChild(task.getHtmlElement_vertical());
         task.isDrawn = true;
         if (task.Predecessor.length != 0) {
           drawArrow(task);
@@ -431,11 +431,18 @@
       const arrow = document.createElement("div");
       arrow.classList.add("arrow");
       arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
-      document.getElementById("taskContainer").innerHTML += arrow.outerHTML;
+      taskContainer.innerHTML += arrow.outerHTML;
     });
   }
   function populateTaskTable() {
     taskTable.innerHTML = "";
+    if (TaskList == null || TaskList.length == 0) {
+      let element = document.createElement("td");
+      element.colSpan = 5;
+      element.textContent = "Keine Aufgaben gefunden";
+      taskTable.appendChild(element);
+      return;
+    }
     TaskList.forEach((task) => {
       const row = document.createElement("tr");
       row.innerHTML = `
