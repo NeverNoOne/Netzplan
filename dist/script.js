@@ -4,6 +4,15 @@
   var TaskListManager = class _TaskListManager extends Array {
     constructor(tasks = []) {
       super(...Array.isArray(tasks) ? tasks : []);
+      this.criticalPath = [];
+      this.onChange = () => {
+        this.sortByStart();
+        this.calculateBackValues();
+        this.criticalPath = this.getCriticalPath();
+      };
+    }
+    triggerChange() {
+      this.onChange();
     }
     static fromCSV(csv) {
       let tmp = new _TaskListManager([]);
@@ -41,12 +50,19 @@
       }
       task.End = task.Start + task.Duration;
       this.push(task);
+      this.triggerChange();
     }
     remove(task) {
+      if (task == void 0) return;
       const index = this.indexOf(task);
       if (index > -1) {
         this.splice(index, 1);
       }
+      this.triggerChange();
+    }
+    removeByID(ID) {
+      this.remove(this.getTaskByID(ID));
+      this.triggerChange();
     }
     calculateBackValues(index = 0) {
       if (index >= this.length) return;
@@ -85,6 +101,14 @@
     }
     sortByStart() {
       this.sort((a, b) => a.Start - b.Start);
+    }
+    getCriticalPath() {
+      let criticalPath = this.filter((task) => task.Puffer == 0);
+      return criticalPath;
+    }
+    criticalPathContains(IDs) {
+      let criticalPathIDs = this.criticalPath.map((task) => task.ID);
+      return IDs.every((id) => criticalPathIDs.includes(id));
     }
   };
   var ValidationResult = class {
@@ -197,6 +221,7 @@
 
   // src/script.ts
   var ArrowColor = "WhiteSmoke";
+  var ArrowColorPrimary = "Orange";
   var ArrowPadding_Vertical = 5;
   var errorModal = document.getElementById("errorModal");
   var modalInstance = new window.bootstrap.Modal(errorModal);
@@ -213,7 +238,7 @@
     showErrorModal(event.message, "interner Fehler", "Ok");
     console.error(event.message, event.error);
   });
-  var TaskList = new TaskListManager([]);
+  var TaskList = new TaskListManager();
   var CurOrientation = () => {
     if (orientationSwitch == null) {
       return 0 /* unknown */;
@@ -270,7 +295,6 @@
       const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
       arrow.style.width = `${arrowWidth}px`;
       arrow.style.height = "2px";
-      arrow.style.backgroundColor = ArrowColor;
       arrow.style.position = "absolute";
       arrow.style.top = `${startY}px`;
       arrow.style.left = `${startX}px`;
@@ -330,8 +354,6 @@
     modalInstance.show();
   }
   function drawTasks() {
-    TaskList.sortByStart();
-    TaskList.calculateBackValues();
     if (taskContainer == null) {
       console.error("taskContainer is null");
       return;
@@ -352,6 +374,7 @@
         drawTasks_horizontally(taskContainer);
         break;
     }
+    window.dispatchEvent(new Event("resize"));
   }
   function drawTasks_horizontally(taskContainer2) {
     let levels = TaskList.getAllLevels().sort((a, b) => a - b);
@@ -367,7 +390,6 @@
       });
       taskContainer2.appendChild(tmpDiv);
     });
-    window.dispatchEvent(new Event("resize"));
   }
   function drawTasks_vertical(taskContainer2) {
     let levels = TaskList.getAllLevels().sort((a, b) => a - b);
@@ -384,13 +406,13 @@
       });
       taskContainer2.appendChild(tmpDiv);
     });
-    window.dispatchEvent(new Event("resize"));
   }
   function createArrow(Task2) {
     Task2.Predecessor.forEach((Predecessor) => {
       const arrow = document.createElement("div");
       arrow.classList.add("arrow");
       arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
+      arrow.style.backgroundColor = TaskList.criticalPathContains([Predecessor, Task2.ID]) ? ArrowColorPrimary : ArrowColor;
       taskContainer.innerHTML += arrow.outerHTML;
     });
   }
@@ -411,16 +433,22 @@
             <td>${task.Duration}</td>
             <td>${task.Predecessor.join(", ")}</td>
             <td>
-                <button type="button" class="btn-close"></button>
+                <button type="button" class="btn-close" onclick="removeTask('${task.ID}')"></button>
             </td>
         `;
       taskTable.appendChild(row);
     });
   }
+  function removeTask(taskID) {
+    TaskList.removeByID(taskID);
+    populateTaskTable();
+    drawTasks();
+  }
   window.readFile = readFile;
   window.addTask = addTask;
   window.changeOrientation = changeOrientation;
   window.populateTaskTable = populateTaskTable;
+  window.removeTask = removeTask;
   window.debugTaskList = function() {
     return TaskList.sort((a, b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));
   };

@@ -1,8 +1,19 @@
 export { TaskListManager , Task };
 
 class TaskListManager extends Array<Task> {
+    criticalPath: Task[] = [];
+    onChange: () => void = () => {
+        this.sortByStart();
+        this.calculateBackValues();
+        this.criticalPath = this.getCriticalPath();
+    };
+
   constructor(tasks: Task[] = []) {
     super(...(Array.isArray(tasks) ? tasks : []));
+  }
+
+  private triggerChange(){
+    this.onChange();
   }
 
   public static fromCSV(csv: string) {
@@ -50,13 +61,21 @@ class TaskListManager extends Array<Task> {
 
     //push task to the list
     this.push(task);
+    this.triggerChange();
   }
 
-  remove(task: Task) {
+  remove(task: Task|undefined) {
+    if (task == undefined) return;
     const index = this.indexOf(task);
     if (index > -1) {
       this.splice(index, 1);
     }
+    this.triggerChange();
+  }
+
+  removeByID(ID:string){
+    this.remove(this.getTaskByID(ID));
+    this.triggerChange();
   }
 
   calculateBackValues(index:number = 0) {
@@ -104,6 +123,16 @@ class TaskListManager extends Array<Task> {
 
   sortByStart(){
     this.sort((a, b) => a.Start - b.Start);
+  }
+
+  getCriticalPath():Task[]{
+    let criticalPath:Task[] = this.filter(task => task.Puffer == 0);
+    return criticalPath;
+  }
+
+  criticalPathContains(IDs:string[]):boolean{
+    let criticalPathIDs = this.criticalPath.map(task => task.ID);
+    return IDs.every(id => criticalPathIDs.includes(id));
   }
 }
 

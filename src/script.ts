@@ -37,7 +37,7 @@ window.addEventListener("error", function(event) {
 //#endregion
 
 //#region variables
-var TaskList:TaskListManager = new TaskListManager([]);
+var TaskList:TaskListManager = new TaskListManager();
 const CurOrientation = () => {
     if (orientationSwitch == null){
         return Orientation.unknown;
@@ -112,7 +112,6 @@ function reposition_arrows():void{
         // Set the CSS styles for the arrow
         arrow.style.width = `${arrowWidth}px`;
         arrow.style.height = '2px';
-        arrow.style.backgroundColor = ArrowColor;
         arrow.style.position = 'absolute';
         arrow.style.top = `${startY}px`;
         arrow.style.left = `${startX}px`;
@@ -186,13 +185,10 @@ function showErrorModal(errorMessage:string, title:string = "Fehler", closeButto
 }
 
 /**
-TODO: Pfeile richtig darstellen
 TODO: primär Pfad kennzeichnen
+TODO: Tasks neben/unter Vorgänger zeichnen anstatt nach ID
 */
-function drawTasks():void {
-    TaskList.sortByStart();
-    TaskList.calculateBackValues();
-    
+function drawTasks():void {    
     if (taskContainer == null){
         console.error("taskContainer is null");
         return;
@@ -214,6 +210,8 @@ function drawTasks():void {
             drawTasks_horizontally(taskContainer);
             break;
     }
+    //redraw any arrows that are not positioned correctly
+    window.dispatchEvent(new Event("resize"));
 }
 
 function drawTasks_horizontally(taskContainer:HTMLElement):void {
@@ -234,9 +232,6 @@ function drawTasks_horizontally(taskContainer:HTMLElement):void {
         });
         taskContainer.appendChild(tmpDiv);
     });
-
-    //redraw any arrows that are not positioned correctly
-    window.dispatchEvent(new Event("resize"));
 }
 
 function drawTasks_vertical(taskContainer:HTMLElement):void {
@@ -257,9 +252,6 @@ function drawTasks_vertical(taskContainer:HTMLElement):void {
         });
         taskContainer.appendChild(tmpDiv);
     });
-
-    //redraw any arrows that are not positioned correctly
-    window.dispatchEvent(new Event("resize"));
 }
 
 function createArrow(Task:Task):void {
@@ -268,6 +260,7 @@ function createArrow(Task:Task):void {
         const arrow = document.createElement('div');
         arrow.classList.add('arrow');
         arrow.id = `arrow-${Predecessor}-${Task.ID}`;
+        arrow.style.backgroundColor = TaskList.criticalPathContains([Predecessor, Task.ID]) ? ArrowColorPrimary : ArrowColor;
         
         // Append the arrow to the document
         taskContainer.innerHTML += arrow.outerHTML;
@@ -296,16 +289,24 @@ function populateTaskTable():void{
             <td>${task.Duration}</td>
             <td>${task.Predecessor.join(", ")}</td>
             <td>
-                <button type="button" class="btn-close"></button>
+                <button type="button" class="btn-close" onclick="removeTask('${task.ID}')"></button>
             </td>
         `;
         taskTable.appendChild(row);
     });
 
 }
+//TODO: remove all trailing tasks
+//TODO: make predecessor in table dropdown
+function removeTask(taskID:string):void{
+    TaskList.removeByID(taskID);
+    populateTaskTable();
+    drawTasks();
+}
 
 (window as any).readFile = readFile;
 (window as any).addTask = addTask;
 (window as any).changeOrientation = changeOrientation;
 (window as any).populateTaskTable = populateTaskTable;
+(window as any).removeTask = removeTask;
 (window as any).debugTaskList = function(){return TaskList.sort((a,b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));};
