@@ -1,7 +1,6 @@
 import { TaskListManager, Task } from "./classes";
 import { Orientation } from "./enums";
 //TODO: localization 
-//TODO: on Orientation change, redraw tasks
 
 //bootstrap declaration for modal so typescript does not throw an error
 declare global {
@@ -52,8 +51,9 @@ const CurOrientation = () => {
 
 //#region resize functions
 function reposition_arrows():void{
-    for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
-        const arrow = document.getElementsByClassName("arrow").item(index) as HTMLElement;
+    const docArrows = document.getElementsByClassName("arrow");
+    for (let index = 0; index < docArrows.length; index++) {
+        const arrow = docArrows.item(index) as HTMLElement;
         if (arrow == null){
             return;
         }
@@ -187,13 +187,12 @@ function showErrorModal(errorMessage:string, title:string = "Fehler", closeButto
 
 /**
 TODO: Pfeile richtig darstellen
-TODO: bei mehr als 2 parallelen Tasks, testen ob alles richtig dargestellt wird
 TODO: primär Pfad kennzeichnen
 */
 function drawTasks():void {
-    TaskList.resetDrawn();
-    TaskList.orderByStart();
+    TaskList.sortByStart();
     TaskList.calculateBackValues();
+    
     if (taskContainer == null){
         console.error("taskContainer is null");
         return;
@@ -218,114 +217,54 @@ function drawTasks():void {
 }
 
 function drawTasks_horizontally(taskContainer:HTMLElement):void {
-    TaskList.forEach(task =>{
-        if (task.isDrawn){
-            return;
-        }
-        if (task.Parallel && task.Predecessor.length != 0){
-            let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
-            //console.log(task.ID);
-            //console.log(tmpTaskParallel);
-            let tmpDiv = document.createElement("div");
-            tmpDiv.classList.add("col","p-3", "text-center", "Task-horizontal");
-            tmpDiv.style.marginLeft = "0.75rem";
-            tmpDiv.style.marginRight = "0.75rem";
 
-            //Tasks zeichnen
-            tmpTaskParallel.forEach(t => {
-                TaskList[TaskList.indexOf(t)].isDrawn = true;
-                tmpDiv.appendChild(t.getHtmlElement_vertical());
-            });
-            taskContainer.appendChild(tmpDiv);
+    let levels = TaskList.getAllLevels().sort((a,b) => a - b);
+    //console.log(levels);
+    levels.forEach(level => {
+        let tmpDiv = document.createElement("div");
+        tmpDiv.classList.add("col-auto");
+        // tmpDiv.style.marginBottom = "0.75rem";
+        tmpDiv.style.alignSelf = "center";
 
-            //Pfeil zeichnen
-            tmpTaskParallel.forEach(t => {
-                drawArrow(t);
-            });
-        }
-        else{
-            taskContainer.appendChild(task.getHtmlElement_horizontal());
-            let tmpTaskElement = document.getElementById(task.ID) as HTMLElement;
-            if (task.Predecessor.length == 0){
-                tmpTaskElement.style.marginRight = "0.75rem";
+        TaskList.forEach(task => {
+            if (task.level == level){
+                tmpDiv.appendChild(task.getHtmlElement_horizontal());
+                createArrow(task);
             }
-            else{
-                tmpTaskElement.style.marginLeft = "0.75rem";
-                tmpTaskElement.style.marginRight = "0.75rem";
-            }
-            task.isDrawn = true;
-            if (task.Predecessor.length != 0){
-                drawArrow(task);
-            }
-        }
+        });
+        taskContainer.appendChild(tmpDiv);
     });
+
     //redraw any arrows that are not positioned correctly
     window.dispatchEvent(new Event("resize"));
 }
 
 function drawTasks_vertical(taskContainer:HTMLElement):void {
 
-    TaskList.forEach(task =>{
-        if (task.isDrawn){
-            return;
-        }
-        if (task.Parallel && task.Predecessor.length != 0){
-            let tmpTaskParallel = TaskList.filter(t => t.Predecessor.includes(task.Predecessor[0]));
-            //console.log(task.ID);
-            //console.log(tmpTaskParallel);
-            let tmpDiv = document.createElement("div");
-            tmpDiv.classList.add("row", "p-3", "text-center");
-            tmpDiv.style.minWidth = "150px";
-            tmpDiv.style.justifySelf = "center";
+    let levels = TaskList.getAllLevels().sort((a,b) => a - b);
+    //console.log(levels);
+    levels.forEach(level => {
+        let tmpDiv = document.createElement("div");
+        tmpDiv.classList.add("row");
+        tmpDiv.style.marginBottom = "0.75rem";
+        tmpDiv.style.justifySelf = "center";
 
-            //Tasks zeichnen
-            tmpTaskParallel.forEach(t => {
-                TaskList[TaskList.indexOf(t)].isDrawn = true;
-                tmpDiv.appendChild(t.getHtmlElement_horizontal());
-            });
-            taskContainer.appendChild(tmpDiv);
-
-            //margin an position anpassen
-            tmpTaskParallel.forEach(t => {
-                let tmpTaskElement = document.getElementById(t.ID) as HTMLElement;
-                if (t.Predecessor.length == 0){
-                    tmpTaskElement.style.marginRight = "0.75rem";
-                }
-                else{
-                    tmpTaskElement.style.marginLeft = "0.75rem";
-                    tmpTaskElement.style.marginRight = "0.75rem";
-                }
-            });
-
-            //Pfeil zeichnen
-            tmpTaskParallel.forEach(t => {
-                drawArrow(t);
-            });
-        }
-        else{
-            taskContainer.appendChild(task.getHtmlElement_vertical());
-
-            task.isDrawn = true; 
-            if (task.Predecessor.length != 0){
-                drawArrow(task);
+        TaskList.forEach(task => {
+            if (task.level == level){
+                tmpDiv.appendChild(task.getHtmlElement_vertical());
+                createArrow(task);
             }
-        }
+        });
+        taskContainer.appendChild(tmpDiv);
     });
 
     //redraw any arrows that are not positioned correctly
     window.dispatchEvent(new Event("resize"));
 }
 
-function drawArrow(Task:Task):void {
+function createArrow(Task:Task):void {
     Task.Predecessor.forEach(Predecessor => {
-        const startElement = document.getElementById(Predecessor);
-        const endElement = document.getElementById(Task.ID);
-
-        if (startElement == null || endElement == null){
-            return;
-        }
-
-        // Create the arrow (SVG line) dynamically
+        // Create the arrow dynamically
         const arrow = document.createElement('div');
         arrow.classList.add('arrow');
         arrow.id = `arrow-${Predecessor}-${Task.ID}`;
@@ -369,3 +308,4 @@ function populateTaskTable():void{
 (window as any).addTask = addTask;
 (window as any).changeOrientation = changeOrientation;
 (window as any).populateTaskTable = populateTaskTable;
+(window as any).debugTaskList = function(){return TaskList.sort((a,b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));};

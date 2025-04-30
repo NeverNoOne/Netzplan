@@ -68,14 +68,23 @@
         let tmpTaskList = this.filter((task) => task.Predecessor.includes(pre));
         curTask.Parallel = tmpTaskList.length > 1;
       });
+      this.setLevel();
     }
-    orderByStart() {
-      this.sort((a, b) => a.Start - b.Start);
-    }
-    resetDrawn() {
-      this.forEach((task) => {
-        task.isDrawn = false;
+    setLevel(index = 0, level = 0) {
+      if (index >= this.length) return;
+      let curTask = this[index];
+      curTask.level = level;
+      let tmpTaskList = this.filter((task) => task.Predecessor.includes(curTask.ID));
+      tmpTaskList.forEach((task) => {
+        this.setLevel(this.indexOf(task), level + 1);
       });
+    }
+    getAllLevels() {
+      let levels = this.map((task) => task.level);
+      return Array.from(new Set(levels)).sort((a, b) => a - b);
+    }
+    sortByStart() {
+      this.sort((a, b) => a.Start - b.Start);
     }
   };
   var ValidationResult = class {
@@ -91,12 +100,12 @@
       this.Duration = Duration;
       this.Predecessor = Predecessor.split(",").filter((x) => x.trim() != "").map((x) => x.trim());
       this.Parallel = false;
-      this.isDrawn = false;
       this.Start = 0;
       this.End = 0;
       this.BackAnfang = 0;
       this.BackEnde = 0;
       this.Puffer = 0;
+      this.level = 0;
     }
     static validateValues(ID, Name, Duration, Predecessor) {
       let isValid = true;
@@ -118,7 +127,7 @@
     }
     getHtmlElement_horizontal() {
       let element = document.createElement("div");
-      element.className = "col p-3 text-center Task-horizontal";
+      element.className = "row-auto container p-3 text-center Task-horizontal";
       element.id = this.ID;
       let row1 = this.getNewRow([
         this.getNewCol("col-3 border rounded-topleft", this.ID),
@@ -142,10 +151,8 @@
       return element;
     }
     getHtmlElement_vertical() {
-      let parentElement = document.createElement("div");
-      parentElement.className = "row container Task-vertical";
       let element = document.createElement("div");
-      element.className = "m-3 text-center";
+      element.className = "col container m-3 text-center Task-vertical";
       element.id = this.ID;
       let row1 = this.getNewRow([
         this.getNewCol("col-3 border rounded-topleft", this.ID),
@@ -166,8 +173,7 @@
         this.getNewCol("col-3 border rounded-bottomright", this.BackEnde.toString())
       ]);
       element.appendChild(row3);
-      parentElement.appendChild(element);
-      return parentElement;
+      return element;
     }
     getNewRow(cols, className = "") {
       let row = document.createElement("div");
@@ -218,8 +224,9 @@
     return 1 /* Horizontal */;
   };
   function reposition_arrows() {
-    for (let index = 0; index < document.getElementsByClassName("arrow").length; index++) {
-      const arrow = document.getElementsByClassName("arrow").item(index);
+    const docArrows = document.getElementsByClassName("arrow");
+    for (let index = 0; index < docArrows.length; index++) {
+      const arrow = docArrows.item(index);
       if (arrow == null) {
         return;
       }
@@ -323,8 +330,7 @@
     modalInstance.show();
   }
   function drawTasks() {
-    TaskList.resetDrawn();
-    TaskList.orderByStart();
+    TaskList.sortByStart();
     TaskList.calculateBackValues();
     if (taskContainer == null) {
       console.error("taskContainer is null");
@@ -348,86 +354,40 @@
     }
   }
   function drawTasks_horizontally(taskContainer2) {
-    TaskList.forEach((task) => {
-      if (task.isDrawn) {
-        return;
-      }
-      if (task.Parallel && task.Predecessor.length != 0) {
-        let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
-        let tmpDiv = document.createElement("div");
-        tmpDiv.classList.add("col", "p-3", "text-center", "Task-horizontal");
-        tmpDiv.style.marginLeft = "0.75rem";
-        tmpDiv.style.marginRight = "0.75rem";
-        tmpTaskParallel.forEach((t) => {
-          TaskList[TaskList.indexOf(t)].isDrawn = true;
-          tmpDiv.appendChild(t.getHtmlElement_vertical());
-        });
-        taskContainer2.appendChild(tmpDiv);
-        tmpTaskParallel.forEach((t) => {
-          drawArrow(t);
-        });
-      } else {
-        taskContainer2.appendChild(task.getHtmlElement_horizontal());
-        let tmpTaskElement = document.getElementById(task.ID);
-        if (task.Predecessor.length == 0) {
-          tmpTaskElement.style.marginRight = "0.75rem";
-        } else {
-          tmpTaskElement.style.marginLeft = "0.75rem";
-          tmpTaskElement.style.marginRight = "0.75rem";
+    let levels = TaskList.getAllLevels().sort((a, b) => a - b);
+    levels.forEach((level) => {
+      let tmpDiv = document.createElement("div");
+      tmpDiv.classList.add("col-auto");
+      tmpDiv.style.alignSelf = "center";
+      TaskList.forEach((task) => {
+        if (task.level == level) {
+          tmpDiv.appendChild(task.getHtmlElement_horizontal());
+          createArrow(task);
         }
-        task.isDrawn = true;
-        if (task.Predecessor.length != 0) {
-          drawArrow(task);
-        }
-      }
+      });
+      taskContainer2.appendChild(tmpDiv);
     });
     window.dispatchEvent(new Event("resize"));
   }
   function drawTasks_vertical(taskContainer2) {
-    TaskList.forEach((task) => {
-      if (task.isDrawn) {
-        return;
-      }
-      if (task.Parallel && task.Predecessor.length != 0) {
-        let tmpTaskParallel = TaskList.filter((t) => t.Predecessor.includes(task.Predecessor[0]));
-        let tmpDiv = document.createElement("div");
-        tmpDiv.classList.add("row", "p-3", "text-center");
-        tmpDiv.style.minWidth = "150px";
-        tmpDiv.style.justifySelf = "center";
-        tmpTaskParallel.forEach((t) => {
-          TaskList[TaskList.indexOf(t)].isDrawn = true;
-          tmpDiv.appendChild(t.getHtmlElement_horizontal());
-        });
-        taskContainer2.appendChild(tmpDiv);
-        tmpTaskParallel.forEach((t) => {
-          let tmpTaskElement = document.getElementById(t.ID);
-          if (t.Predecessor.length == 0) {
-            tmpTaskElement.style.marginRight = "0.75rem";
-          } else {
-            tmpTaskElement.style.marginLeft = "0.75rem";
-            tmpTaskElement.style.marginRight = "0.75rem";
-          }
-        });
-        tmpTaskParallel.forEach((t) => {
-          drawArrow(t);
-        });
-      } else {
-        taskContainer2.appendChild(task.getHtmlElement_vertical());
-        task.isDrawn = true;
-        if (task.Predecessor.length != 0) {
-          drawArrow(task);
+    let levels = TaskList.getAllLevels().sort((a, b) => a - b);
+    levels.forEach((level) => {
+      let tmpDiv = document.createElement("div");
+      tmpDiv.classList.add("row");
+      tmpDiv.style.marginBottom = "0.75rem";
+      tmpDiv.style.justifySelf = "center";
+      TaskList.forEach((task) => {
+        if (task.level == level) {
+          tmpDiv.appendChild(task.getHtmlElement_vertical());
+          createArrow(task);
         }
-      }
+      });
+      taskContainer2.appendChild(tmpDiv);
     });
     window.dispatchEvent(new Event("resize"));
   }
-  function drawArrow(Task2) {
+  function createArrow(Task2) {
     Task2.Predecessor.forEach((Predecessor) => {
-      const startElement = document.getElementById(Predecessor);
-      const endElement = document.getElementById(Task2.ID);
-      if (startElement == null || endElement == null) {
-        return;
-      }
       const arrow = document.createElement("div");
       arrow.classList.add("arrow");
       arrow.id = `arrow-${Predecessor}-${Task2.ID}`;
@@ -461,4 +421,7 @@
   window.addTask = addTask;
   window.changeOrientation = changeOrientation;
   window.populateTaskTable = populateTaskTable;
+  window.debugTaskList = function() {
+    return TaskList.sort((a, b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));
+  };
 })();

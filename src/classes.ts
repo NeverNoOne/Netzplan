@@ -72,7 +72,6 @@ class TaskListManager extends Array<Task> {
             curTask.BackAnfang = curTask.BackEnde - curTask.Duration;
             curTask.Puffer = curTask.BackAnfang - curTask.Start;
         }
-        //TODO: wenn es mehere letzte Tasks gibt, dann den mit dem größten Endwert nehmen
         else{
             curTask.BackAnfang = curTask.Start;
             curTask.BackEnde = curTask.End;
@@ -85,16 +84,26 @@ class TaskListManager extends Array<Task> {
         curTask.Parallel = tmpTaskList.length > 1;
         
     });
+    this.setLevel();
   }
 
-  orderByStart(){
-    this.sort((a, b) => a.Start - b.Start);
-  }
-
-  resetDrawn(){
-    this.forEach(task => {
-        task.isDrawn = false;
+  private setLevel(index:number = 0, level:number = 0){
+    if (index >= this.length) return;
+    let curTask:Task = this[index];
+    curTask.level = level;
+    let tmpTaskList = this.filter(task => task.Predecessor.includes(curTask.ID));
+    tmpTaskList.forEach(task => {
+        this.setLevel(this.indexOf(task), level + 1);
     });
+  }
+
+  getAllLevels():number[]{
+    let levels = this.map(task => task.level);
+    return Array.from(new Set(levels)).sort((a, b) => a - b);
+  }
+
+  sortByStart(){
+    this.sort((a, b) => a.Start - b.Start);
   }
 }
 
@@ -113,24 +122,25 @@ class Task {
     Duration: number;
     Predecessor: string[];
     Parallel: boolean;
-    isDrawn: boolean;
     Start: number;
     End: number;
     BackAnfang: number;
     BackEnde: number;
     Puffer: number;
+    level:number;
+    
     constructor(ID:string, Name:any,Duration:number,Predecessor:string) {
         this.ID = ID.trim();
         this.Name = Name;
         this.Duration = Duration;
         this.Predecessor = Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim());
         this.Parallel = false;
-        this.isDrawn = false;
         this.Start = 0;
         this.End = 0;
         this.BackAnfang = 0;
         this.BackEnde = 0;
         this.Puffer = 0;
+        this.level = 0;
     }
 
     public static validateValues(ID:string, Name:any, Duration:number, Predecessor:string):ValidationResult{
@@ -155,7 +165,7 @@ class Task {
 
     getHtmlElement_horizontal():HTMLElement{
         let element = document.createElement("div");
-        element.className = "col p-3 text-center Task-horizontal";
+        element.className = "row-auto container p-3 text-center Task-horizontal";
         element.id = this.ID;
 
         //first row
@@ -187,11 +197,9 @@ class Task {
     }
 
     getHtmlElement_vertical():HTMLElement{
-        let parentElement = document.createElement("div");
-        parentElement.className = "row container Task-vertical";
         
         let element = document.createElement("div");
-        element.className = "m-3 text-center";
+        element.className = "col container m-3 text-center Task-vertical";
         element.id = this.ID;
 
         //first row
@@ -219,9 +227,7 @@ class Task {
         ]);
         element.appendChild(row3);
 
-        parentElement.appendChild(element);
-
-        return parentElement;
+        return element;
     }
 
     private getNewRow(cols:HTMLElement[], className:string=""):HTMLElement{
