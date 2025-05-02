@@ -64,8 +64,7 @@ class TaskListManager extends Array<Task> {
     this.triggerChange();
   }
 
-  remove(task: Task|undefined) {
-    if (task == undefined) return;
+  remove(task: Task) {
     const index = this.indexOf(task);
     if (index > -1) {
       this.splice(index, 1);
@@ -74,8 +73,26 @@ class TaskListManager extends Array<Task> {
   }
 
   removeByID(ID:string){
-    this.remove(this.getTaskByID(ID));
+    const task = this.getTaskByID(ID);
+    if (task == undefined) return;
+    //remove all trailing tasks
+    this.getAllTrailingTasks(task).forEach(t => {
+        this.remove(t);
+    })
+    this.remove(task);
+    //remove all references to the task in other tasks
+    this.filter(t => t.Predecessor.includes(ID)).forEach(t => {
+        t.Predecessor.splice(t.Predecessor.indexOf(ID), 1);
+    })
     this.triggerChange();
+  }
+
+  private getAllTrailingTasks(task:Task):Task[]{
+    let trailingTasks:Task[] = this.filter(t => t.Predecessor.join(",") == task.ID);
+    trailingTasks.forEach(t => {
+        trailingTasks = trailingTasks.concat(this.getAllTrailingTasks(t));
+    });
+    return trailingTasks;
   }
 
   calculateBackValues(index:number = 0) {

@@ -28,7 +28,13 @@ const taskContainer = document.getElementById("taskContainer") as HTMLElement;
 //#region eventListeners
 window.addEventListener("resize", function(){
     //check constraints for breakpoints
-    //if (Math.min(TaskList.map((t) => t.End)))
+    const startTaskRect = getStartTaskRect();
+    const endTaskRect = getEndTaskRect();
+    if (CurOrientation() != Orientation.Vertical && startTaskRect != undefined && endTaskRect != undefined
+        && startTaskRect.top != endTaskRect.top){ 
+        changeOrientation(true);
+        console.log("Orientation changed to vertical");
+    }
     reposition_arrows();
 });
 
@@ -51,6 +57,22 @@ const CurOrientation = () => {
         return Orientation.Vertical;
     }
     return Orientation.Horizontal;
+}
+
+function getStartTaskRect():DOMRect|undefined{
+    const task = TaskList.find(task => task.Start == 0);
+    if (task == null) return undefined;
+    const taskElement = document.getElementById(task.ID);
+    if (taskElement == null) return undefined;
+    return taskElement.getBoundingClientRect();
+}
+
+function getEndTaskRect():DOMRect|undefined{
+    const task = TaskList.find(task => task.level == Math.max(...TaskList.map(t => t.level)));
+    if (task == null) return undefined;
+    const taskElement = document.getElementById(task.ID);
+    if (taskElement == null) return undefined;
+    return taskElement.getBoundingClientRect();
 }
 //#endregion
 
@@ -141,7 +163,7 @@ function reposition_arrows():void{
         arrow.style.setProperty('--arrowhead-size', '10px');
         arrow.style.setProperty('--arrowhead-color', arrow.style.backgroundColor);
         arrow.style.setProperty('--arrowhead-left', arrowWidth - 5 + 'px'); // 5px from the end of the arrow
-        arrow.style.setProperty('--arrowhead-rotation', `${135}deg`); //TODO: make sure heads always point to the end element
+        arrow.style.setProperty('--arrowhead-rotation', `${135}deg`);
         arrow.classList.add('arrow-with-head');
     };
     //console.log("resize");
@@ -215,7 +237,6 @@ function showErrorModal(errorMessage:string, title:string = "Fehler", closeButto
 }
 
 /**
-TODO: primär Pfad kennzeichnen
 TODO: Tasks neben/unter Vorgänger zeichnen anstatt nach ID
 */
 function drawTasks():void {    
@@ -297,8 +318,6 @@ function createArrow(Task:Task):void {
     });
 }
 
-//TODO: remove this function and use the TaskListManager to populate the table
-//TODO: implement remove task function
 function populateTaskTable():void{
     taskTable.innerHTML = ""; // Clear the table body
 
@@ -327,7 +346,6 @@ function populateTaskTable():void{
 
 }
 
-//TODO: remove all trailing tasks
 //TODO: make predecessor in table dropdown
 function removeTask(taskID:string):void{
     TaskList.removeByID(taskID);

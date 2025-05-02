@@ -53,7 +53,6 @@
       this.triggerChange();
     }
     remove(task) {
-      if (task == void 0) return;
       const index = this.indexOf(task);
       if (index > -1) {
         this.splice(index, 1);
@@ -61,8 +60,23 @@
       this.triggerChange();
     }
     removeByID(ID) {
-      this.remove(this.getTaskByID(ID));
+      const task = this.getTaskByID(ID);
+      if (task == void 0) return;
+      this.getAllTrailingTasks(task).forEach((t) => {
+        this.remove(t);
+      });
+      this.remove(task);
+      this.filter((t) => t.Predecessor.includes(ID)).forEach((t) => {
+        t.Predecessor.splice(t.Predecessor.indexOf(ID), 1);
+      });
       this.triggerChange();
+    }
+    getAllTrailingTasks(task) {
+      let trailingTasks = this.filter((t) => t.Predecessor.join(",") == task.ID);
+      trailingTasks.forEach((t) => {
+        trailingTasks = trailingTasks.concat(this.getAllTrailingTasks(t));
+      });
+      return trailingTasks;
     }
     calculateBackValues(index = 0) {
       if (index >= this.length) return;
@@ -232,6 +246,12 @@
   var orientationSwitch = document.getElementById("orientationSwitch");
   var taskContainer = document.getElementById("taskContainer");
   window.addEventListener("resize", function() {
+    const startTaskRect = getStartTaskRect();
+    const endTaskRect = getEndTaskRect();
+    if (CurOrientation() != 2 /* Vertical */ && startTaskRect != void 0 && endTaskRect != void 0 && startTaskRect.top != endTaskRect.top) {
+      changeOrientation(true);
+      console.log("Orientation changed to vertical");
+    }
     reposition_arrows();
   });
   window.addEventListener("error", function(event) {
@@ -248,6 +268,20 @@
     }
     return 1 /* Horizontal */;
   };
+  function getStartTaskRect() {
+    const task = TaskList.find((task2) => task2.Start == 0);
+    if (task == null) return void 0;
+    const taskElement = document.getElementById(task.ID);
+    if (taskElement == null) return void 0;
+    return taskElement.getBoundingClientRect();
+  }
+  function getEndTaskRect() {
+    const task = TaskList.find((task2) => task2.level == Math.max(...TaskList.map((t) => t.level)));
+    if (task == null) return void 0;
+    const taskElement = document.getElementById(task.ID);
+    if (taskElement == null) return void 0;
+    return taskElement.getBoundingClientRect();
+  }
   function reposition_arrows() {
     const docArrows = document.getElementsByClassName("arrow");
     for (let index = 0; index < docArrows.length; index++) {
