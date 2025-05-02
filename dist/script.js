@@ -285,11 +285,21 @@
         endY = endRect.top;
         startY += ArrowPadding_Vertical;
         endY -= ArrowPadding_Vertical;
+        if (startX > endX) {
+          endX += 5;
+        } else if (startX < endX) {
+          endX -= 5;
+        }
       } else {
         startX = startRect.right;
         startY = startRect.top + startRect.height / 2;
         endX = endRect.left;
         endY = endRect.top + endRect.height / 2;
+        if (startY > endY) {
+          endY += 5;
+        } else if (startY < endY) {
+          endY -= 5;
+        }
       }
       const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
       const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
@@ -300,6 +310,11 @@
       arrow.style.left = `${startX}px`;
       arrow.style.transformOrigin = "0 50%";
       arrow.style.transform = `rotate(${angle}deg)`;
+      arrow.style.setProperty("--arrowhead-size", "10px");
+      arrow.style.setProperty("--arrowhead-color", arrow.style.backgroundColor);
+      arrow.style.setProperty("--arrowhead-left", arrowWidth - 5 + "px");
+      arrow.style.setProperty("--arrowhead-rotation", `${135}deg`);
+      arrow.classList.add("arrow-with-head");
     }
     ;
   }
@@ -323,7 +338,10 @@
     };
     reader.readAsText(file);
   }
-  function changeOrientation() {
+  function changeOrientation(applyOnFrontend = false) {
+    if (applyOnFrontend) {
+      orientationSwitch.checked = !orientationSwitch.checked;
+    }
     drawTasks();
   }
   function addTask() {

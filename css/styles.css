@@ -31,3 +31,17 @@
     max-width: 15rem;
     justify-self: center;
 }
+
+.arrow-with-head::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: var(--arrowhead-size) var(--arrowhead-size) 0 0;
+    border-color: var(--arrowhead-color) transparent transparent transparent;
+    transform: translate(-50%, -50%) rotate(var(--arrowhead-rotation)); /* 135 degrees to point the arrowhead in the correct direction */
+    transform-origin: center;
+    top: 50%;
+    left: var(--arrowhead-left);
+}

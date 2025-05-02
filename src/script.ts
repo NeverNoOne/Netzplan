@@ -27,6 +27,8 @@ const taskContainer = document.getElementById("taskContainer") as HTMLElement;
 
 //#region eventListeners
 window.addEventListener("resize", function(){
+    //check constraints for breakpoints
+    //if (Math.min(TaskList.map((t) => t.End)))
     reposition_arrows();
 });
 
@@ -38,6 +40,9 @@ window.addEventListener("error", function(event) {
 
 //#region variables
 var TaskList:TaskListManager = new TaskListManager();
+//#endregion
+
+//#region helper functions
 const CurOrientation = () => {
     if (orientationSwitch == null){
         return Orientation.unknown;
@@ -50,6 +55,7 @@ const CurOrientation = () => {
 //#endregion
 
 //#region resize functions
+//TODO: make sure arrows are not overlapping with each other/adjust end position
 function reposition_arrows():void{
     const docArrows = document.getElementsByClassName("arrow");
     for (let index = 0; index < docArrows.length; index++) {
@@ -95,6 +101,13 @@ function reposition_arrows():void{
             // Adjust the start and end Y positions to avoid overlap with the task boxes
             startY += ArrowPadding_Vertical;
             endY -= ArrowPadding_Vertical;
+
+            if (startX > endX){
+                endX += 5;
+            }
+            else if (startX < endX){
+                endX -= 5;
+            }
         }
         //defaults to horizontal
         else{
@@ -102,8 +115,14 @@ function reposition_arrows():void{
             startY = startRect.top + startRect.height / 2;
             endX = endRect.left;
             endY = endRect.top + endRect.height / 2;
-        }
 
+            if (startY > endY){
+                endY += 5;
+            }
+            else if (startY < endY){
+                endY -= 5;
+            }
+        }
 
         // calculate the arrow width and angle
         const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
@@ -117,11 +136,18 @@ function reposition_arrows():void{
         arrow.style.left = `${startX}px`;
         arrow.style.transformOrigin = '0 50%'; // Set origin for rotation
         arrow.style.transform = `rotate(${angle}deg)`; // Rotate the arrow to the right angle
+
+        //Set arrowhead
+        arrow.style.setProperty('--arrowhead-size', '10px');
+        arrow.style.setProperty('--arrowhead-color', arrow.style.backgroundColor);
+        arrow.style.setProperty('--arrowhead-left', arrowWidth - 5 + 'px'); // 5px from the end of the arrow
+        arrow.style.setProperty('--arrowhead-rotation', `${135}deg`); //TODO: make sure heads always point to the end element
+        arrow.classList.add('arrow-with-head');
     };
     //console.log("resize");
 }
-
 //#endregion
+
 function readFile():void {
     const file: File|undefined = (document.getElementById("formFile") as HTMLInputElement)?.files?.[0];
     if (file == null) {
@@ -146,7 +172,11 @@ function readFile():void {
     //console.log(file);
     reader.readAsText(file);
 }
-function changeOrientation():void{
+
+function changeOrientation(applyOnFrontend:boolean=false):void{
+    if (applyOnFrontend){
+        orientationSwitch.checked = !orientationSwitch.checked;
+    }
     drawTasks();
 }
 
@@ -296,6 +326,7 @@ function populateTaskTable():void{
     });
 
 }
+
 //TODO: remove all trailing tasks
 //TODO: make predecessor in table dropdown
 function removeTask(taskID:string):void{
