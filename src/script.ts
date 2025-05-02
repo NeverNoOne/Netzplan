@@ -23,6 +23,10 @@ const errorModalCloseButton = errorModal.querySelector(".modal-footer")?.querySe
 const taskTable = document.getElementById("taskTableBody") as HTMLElement;
 const orientationSwitch = document.getElementById("orientationSwitch") as HTMLInputElement;
 const taskContainer = document.getElementById("taskContainer") as HTMLElement;
+const alertElementTemplate = document.getElementById("alert") as HTMLElement;
+const alertTitleTemplate = document.getElementById("alertTitle") as HTMLElement;
+const alertBodyTemplate = document.getElementById("alertMessage") as HTMLElement;
+const alertContainer = document.getElementById("toastContainer") as HTMLElement;
 //#endregion
 
 //#region eventListeners
@@ -34,6 +38,7 @@ window.addEventListener("resize", function(){
         && startTaskRect.top != endTaskRect.top){ 
         changeOrientation(true);
         console.log("Orientation changed to vertical");
+        triggerAlert("Info", "Orientation changed to vertical");
     }
     reposition_arrows();
 });
@@ -73,6 +78,23 @@ function getEndTaskRect():DOMRect|undefined{
     const taskElement = document.getElementById(task.ID);
     if (taskElement == null) return undefined;
     return taskElement.getBoundingClientRect();
+}
+
+function triggerAlert(title:string, message:string):void{
+    alertTitleTemplate.textContent = title;
+    alertBodyTemplate.textContent = message;
+
+    const alertElement = alertElementTemplate.cloneNode(true) as HTMLElement;
+    alertElement.id = "alert-" + Date.now(); // Unique ID for the alert
+
+    alertContainer.appendChild(alertElement);
+
+    const toast = new window.bootstrap.Toast(alertElement)
+    toast.show();
+    alertElement.addEventListener('hidden.bs.toast', () => {
+        alertElement.remove();
+    });
+    
 }
 //#endregion
 

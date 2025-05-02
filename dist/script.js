@@ -245,12 +245,17 @@
   var taskTable = document.getElementById("taskTableBody");
   var orientationSwitch = document.getElementById("orientationSwitch");
   var taskContainer = document.getElementById("taskContainer");
+  var alertElementTemplate = document.getElementById("alert");
+  var alertTitleTemplate = document.getElementById("alertTitle");
+  var alertBodyTemplate = document.getElementById("alertMessage");
+  var alertContainer = document.getElementById("toastContainer");
   window.addEventListener("resize", function() {
     const startTaskRect = getStartTaskRect();
     const endTaskRect = getEndTaskRect();
     if (CurOrientation() != 2 /* Vertical */ && startTaskRect != void 0 && endTaskRect != void 0 && startTaskRect.top != endTaskRect.top) {
       changeOrientation(true);
       console.log("Orientation changed to vertical");
+      triggerAlert("Info", "Orientation changed to vertical");
     }
     reposition_arrows();
   });
@@ -281,6 +286,18 @@
     const taskElement = document.getElementById(task.ID);
     if (taskElement == null) return void 0;
     return taskElement.getBoundingClientRect();
+  }
+  function triggerAlert(title, message) {
+    alertTitleTemplate.textContent = title;
+    alertBodyTemplate.textContent = message;
+    const alertElement = alertElementTemplate.cloneNode(true);
+    alertElement.id = "alert-" + Date.now();
+    alertContainer.appendChild(alertElement);
+    const toast = new window.bootstrap.Toast(alertElement);
+    toast.show();
+    alertElement.addEventListener("hidden.bs.toast", () => {
+      alertElement.remove();
+    });
   }
   function reposition_arrows() {
     const docArrows = document.getElementsByClassName("arrow");
