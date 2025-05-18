@@ -2,20 +2,24 @@
 (() => {
   // src/classes.ts
   var TaskListManager = class _TaskListManager extends Array {
-    constructor(tasks = []) {
+    constructor(tasks = [], onChange_Handler = () => {
+    }) {
       super(...Array.isArray(tasks) ? tasks : []);
       this.criticalPath = [];
       this.onChange = () => {
         this.sortByStart();
         this.calculateBackValues();
         this.criticalPath = this.getCriticalPath();
+        this.ChangeHandler();
       };
+      this.ChangeHandler = onChange_Handler;
     }
     triggerChange() {
       this.onChange();
     }
-    static fromCSV(csv) {
-      let tmp = new _TaskListManager([]);
+    static fromCSV(csv, onChange_Handler = () => {
+    }) {
+      let tmp = new _TaskListManager([], onChange_Handler);
       let lines = csv.split("\r\n");
       for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];
@@ -263,8 +267,8 @@
     showErrorModal(event.message, "interner Fehler", "Ok");
     console.error(event.message, event.error);
   });
-  var TaskList = new TaskListManager();
-  var CurOrientation = () => {
+  var TaskList = new TaskListManager([], drawTasks);
+  function CurOrientation() {
     if (orientationSwitch == null) {
       return 0 /* unknown */;
     }
@@ -272,7 +276,7 @@
       return 2 /* Vertical */;
     }
     return 1 /* Horizontal */;
-  };
+  }
   function getStartTaskRect() {
     const task = TaskList.find((task2) => task2.Start == 0);
     if (task == null) return void 0;
@@ -384,7 +388,7 @@
       if (reader.result == null) {
         return;
       }
-      TaskList = TaskListManager.fromCSV(reader.result);
+      TaskList = TaskListManager.fromCSV(reader.result, drawTasks);
       drawTasks();
     };
     reader.readAsText(file);
@@ -393,7 +397,6 @@
     if (applyOnFrontend) {
       orientationSwitch.checked = !orientationSwitch.checked;
     }
-    drawTasks();
   }
   function addTask() {
     let ID = document.getElementById("ID").value;
@@ -407,7 +410,6 @@
     }
     let CurTask = new Task(ID, Name, Duration, Predecessor);
     TaskList.add(CurTask);
-    drawTasks();
     clearControl();
   }
   function clearControl() {
@@ -511,7 +513,6 @@
   function removeTask(taskID) {
     TaskList.removeByID(taskID);
     populateTaskTable();
-    drawTasks();
   }
   window.readFile = readFile;
   window.addTask = addTask;

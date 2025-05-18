@@ -1,23 +1,29 @@
 export { TaskListManager , Task };
 
+type VoidFunction = () => void;
+
 class TaskListManager extends Array<Task> {
     criticalPath: Task[] = [];
+    private ChangeHandler: VoidFunction;
     onChange: () => void = () => {
         this.sortByStart();
         this.calculateBackValues();
         this.criticalPath = this.getCriticalPath();
+        //call custom change handler if set
+        this.ChangeHandler();
     };
 
-  constructor(tasks: Task[] = []) {
+  constructor(tasks: Task[] = [], onChange_Handler:VoidFunction = () => {}) {
     super(...(Array.isArray(tasks) ? tasks : []));
+    this.ChangeHandler = onChange_Handler;
   }
 
   private triggerChange(){
     this.onChange();
   }
 
-  public static fromCSV(csv: string) {
-    let tmp = new TaskListManager([]);
+  public static fromCSV(csv: string, onChange_Handler:VoidFunction = () => {}): TaskListManager {
+    let tmp = new TaskListManager([], onChange_Handler);
     let lines = csv.split("\r\n");
     for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];

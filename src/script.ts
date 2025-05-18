@@ -50,11 +50,11 @@ window.addEventListener("error", function(event) {
 //#endregion
 
 //#region variables
-var TaskList:TaskListManager = new TaskListManager();
+var TaskList:TaskListManager = new TaskListManager( [], drawTasks);
 //#endregion
 
 //#region helper functions
-const CurOrientation = () => {
+function CurOrientation():Orientation {
     if (orientationSwitch == null){
         return Orientation.unknown;
     }
@@ -210,7 +210,7 @@ function readFile():void {
             return;
         }
         //mapCSVtoTasks(reader.result);
-        TaskList = TaskListManager.fromCSV(reader.result as string);
+        TaskList = TaskListManager.fromCSV(reader.result as string, drawTasks);
         drawTasks();
     }
     //console.log(file);
@@ -221,7 +221,7 @@ function changeOrientation(applyOnFrontend:boolean=false):void{
     if (applyOnFrontend){
         orientationSwitch.checked = !orientationSwitch.checked;
     }
-    drawTasks();
+    //drawTasks();
 }
 
 function addTask():void {
@@ -240,7 +240,7 @@ function addTask():void {
     let CurTask = new Task(ID, Name, Duration, Predecessor);
     TaskList.add(CurTask);
 
-    drawTasks();
+    //drawTasks();
     clearControl();
 }
 
@@ -372,7 +372,7 @@ function populateTaskTable():void{
 function removeTask(taskID:string):void{
     TaskList.removeByID(taskID);
     populateTaskTable();
-    drawTasks();
+    //drawTasks();
 }
 
 (window as any).readFile = readFile;
