@@ -1,0 +1,7 @@
+A;Aufgabe A;2;
+B;Aufgabe B;4;A
+C;Aufgabe C;3;B
+D;Aufgabe D;2;B
+E;Aufgabe E;1;C,D
+F;Aufgabe F;4;C
+G;Aufgabe G;5;E,F
