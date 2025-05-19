@@ -168,6 +168,9 @@ function reposition_arrows():void{
             }
         }
 
+        endY += window.pageYOffset;
+        startY += window.pageYOffset;
+
         // calculate the arrow width and angle
         const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
         const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI); // Angle in degrees
@@ -221,7 +224,7 @@ function changeOrientation(applyOnFrontend:boolean=false):void{
     if (applyOnFrontend){
         orientationSwitch.checked = !orientationSwitch.checked;
     }
-    //drawTasks();
+    drawTasks();
 }
 
 function addTask():void {

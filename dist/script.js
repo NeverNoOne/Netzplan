@@ -20,7 +20,8 @@
     static fromCSV(csv, onChange_Handler = () => {
     }) {
       let tmp = new _TaskListManager([], onChange_Handler);
-      let lines = csv.split("\r\n");
+      let splitter = csv[csv.length - 1];
+      let lines = csv.split("\n");
       for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];
         let values = element.split(";");
@@ -356,6 +357,8 @@
           endY -= 5;
         }
       }
+      endY += window.pageYOffset;
+      startY += window.pageYOffset;
       const arrowWidth = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
       const angle = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
       arrow.style.width = `${arrowWidth}px`;
@@ -397,6 +400,7 @@
     if (applyOnFrontend) {
       orientationSwitch.checked = !orientationSwitch.checked;
     }
+    drawTasks();
   }
   function addTask() {
     let ID = document.getElementById("ID").value;

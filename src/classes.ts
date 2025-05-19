@@ -24,7 +24,9 @@ class TaskListManager extends Array<Task> {
 
   public static fromCSV(csv: string, onChange_Handler:VoidFunction = () => {}): TaskListManager {
     let tmp = new TaskListManager([], onChange_Handler);
-    let lines = csv.split("\r\n");
+    let splitter = csv[csv.length - 1];
+    // let lines = csv.split("\r\n");
+    let lines = csv.split("\n");
     for (let index = 0; index < lines.length - 1; index++) {
         const element = lines[index];
         let values = element.split(";");
