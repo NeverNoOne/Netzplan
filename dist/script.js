@@ -37,7 +37,7 @@
     getTaskByID(ID) {
       return this.find((task) => task.ID == ID);
     }
-    add(task) {
+    add(task, triggerChange = true) {
       if (this.getTaskByID(task.ID) != void 0) {
         console.error("Task already exists", task.ID);
         alert("Task already exists: " + task.ID);
@@ -58,21 +58,25 @@
       this.triggerChange();
     }
     remove(task) {
-      const index = this.indexOf(task);
+      const index = this.findIndex((t) => t.ID == task.ID);
       if (index > -1) {
         this.splice(index, 1);
       }
-      this.triggerChange();
     }
     removeByID(ID) {
       const task = this.getTaskByID(ID);
       if (task == void 0) return;
       this.getAllTrailingTasks(task).forEach((t) => {
-        this.remove(t);
+        this.removeByID(t.ID);
       });
       this.remove(task);
       this.filter((t) => t.Predecessor.includes(ID)).forEach((t) => {
         t.Predecessor.splice(t.Predecessor.indexOf(ID), 1);
+      });
+      let tmp = new _TaskListManager(this, this.onChange);
+      this.length = 0;
+      tmp.forEach((t) => {
+        this.add(new Task(t.ID, t.Name, t.Duration, t.Predecessor.join(",")), false);
       });
       this.triggerChange();
     }
@@ -523,7 +527,4 @@
   window.changeOrientation = changeOrientation;
   window.populateTaskTable = populateTaskTable;
   window.removeTask = removeTask;
-  window.debugTaskList = function() {
-    return TaskList.sort((a, b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));
-  };
 })();

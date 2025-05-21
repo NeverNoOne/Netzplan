@@ -383,4 +383,3 @@ function removeTask(taskID:string):void{
 (window as any).changeOrientation = changeOrientation;
 (window as any).populateTaskTable = populateTaskTable;
 (window as any).removeTask = removeTask;
-(window as any).debugTaskList = function(){return TaskList.sort((a,b) => a.level - b.level).map((t) => [t.ID, t.level].join(","));};

@@ -44,7 +44,7 @@ class TaskListManager extends Array<Task> {
     return this.find(task => task.ID == ID);
   }
 
-  add(task: Task) {
+  add(task: Task, triggerChange:boolean = true) {
     //check if task already exists
     if(this.getTaskByID(task.ID) != undefined){
         console.error("Task already exists", task.ID);
@@ -72,12 +72,11 @@ class TaskListManager extends Array<Task> {
     this.triggerChange();
   }
 
-  remove(task: Task) {
-    const index = this.indexOf(task);
+  private remove(task: Task) {
+    const index = this.findIndex((t) => t.ID == task.ID);
     if (index > -1) {
       this.splice(index, 1);
     }
-    this.triggerChange();
   }
 
   removeByID(ID:string){
@@ -85,12 +84,19 @@ class TaskListManager extends Array<Task> {
     if (task == undefined) return;
     //remove all trailing tasks
     this.getAllTrailingTasks(task).forEach(t => {
-        this.remove(t);
+        this.removeByID(t.ID);
     })
     this.remove(task);
     //remove all references to the task in other tasks
     this.filter(t => t.Predecessor.includes(ID)).forEach(t => {
         t.Predecessor.splice(t.Predecessor.indexOf(ID), 1);
+    })
+    //reinitialize the task list
+    //so the tasks are losing old data
+    let tmp = new TaskListManager(this, this.onChange);
+    this.length = 0;
+    tmp.forEach(t => {
+        this.add(new Task(t.ID, t.Name, t.Duration, t.Predecessor.join(",")), false);
     })
     this.triggerChange();
   }
