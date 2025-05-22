@@ -154,7 +154,7 @@
       this.Puffer = 0;
       this.level = 0;
     }
-    static validateValues(ID, Name, Duration, Predecessor) {
+    static validateValues(ID, Name, Duration, Predecessor, TaskList2) {
       let isValid = true;
       let errorMessage = "";
       if (ID.trim() == "") {
@@ -168,6 +168,14 @@
       if (Duration <= 0) {
         isValid = false;
         errorMessage += "Keine Dauer angegeben, ";
+      }
+      if (Predecessor.split(",").filter((x) => x.trim() != "").map((x) => x.trim()).some((pre) => pre == ID)) {
+        isValid = false;
+        errorMessage += "Eine Aufgabe kann sich nicht selbst als Vorg\xE4nger haben, ";
+      }
+      if (Predecessor.split(",").filter((x) => x.trim() != "").map((x) => x.trim()).some((pre) => TaskList2.getTaskByID(pre) == void 0)) {
+        isValid = false;
+        errorMessage += "Ein Vorg\xE4nger ist nicht in der Liste, ";
       }
       errorMessage = errorMessage.endsWith(", ") ? errorMessage.slice(0, -2) : errorMessage;
       return new ValidationResult(isValid, errorMessage);
@@ -411,7 +419,7 @@
     let Name = document.getElementById("Task").value;
     let Duration = Number(document.getElementById("Duration").value);
     let Predecessor = document.getElementById("Predecessor").value;
-    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor);
+    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor, TaskList);
     if (validationResult.isValid == false) {
       showErrorModal(validationResult.errorMessage, "Eingabe-Fehler", "Ok");
       return;

@@ -233,7 +233,7 @@ function addTask():void {
     let Duration = Number((document.getElementById("Duration") as HTMLInputElement).value);
     let Predecessor = (document.getElementById("Predecessor") as HTMLInputElement).value;
     
-    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor);
+    let validationResult = Task.validateValues(ID, Name, Duration, Predecessor, TaskList);
     if (validationResult.isValid == false){
         // alert(validationResult.errorMessage);
         showErrorModal(validationResult.errorMessage, "Eingabe-Fehler", "Ok");

@@ -203,7 +203,7 @@ class Task {
         this.level = 0;
     }
 
-    public static validateValues(ID:string, Name:any, Duration:number, Predecessor:string):ValidationResult{
+    public static validateValues(ID:string, Name:any, Duration:number, Predecessor:string, TaskList:TaskListManager):ValidationResult{
         let isValid = true;
         let errorMessage = "";
         if (ID.trim() == ""){
@@ -217,6 +217,16 @@ class Task {
         if (Duration <= 0){
             isValid = false;
             errorMessage += "Keine Dauer angegeben, ";
+        }
+        //validate predecessor
+        //error when predecessor ID is not in the task list or is itself
+        if (Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim()).some((pre) => pre == ID)){
+            isValid = false;
+            errorMessage += "Eine Aufgabe kann sich nicht selbst als Vorgänger haben, ";
+        }
+        if (Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim()).some((pre) => TaskList.getTaskByID(pre) == undefined)){
+            isValid = false;
+            errorMessage += "Ein Vorgänger ist nicht in der Liste, ";
         }
         errorMessage = errorMessage.endsWith(", ") ? errorMessage.slice(0, -2) : errorMessage;
         //predecessor doesn't need to be validated, because it can be empty
