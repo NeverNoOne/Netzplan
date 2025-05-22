@@ -212,12 +212,13 @@ class Task {
         }
         if (Name.trim() == ""){
             isValid = false;
-            errorMessage += "Keine Name angegeben, ";
+            errorMessage += "Keinen Name angegeben, ";
         }
         if (Duration <= 0){
             isValid = false;
             errorMessage += "Keine Dauer angegeben, ";
         }
+
         //validate predecessor
         //error when predecessor ID is not in the task list or is itself
         if (Predecessor.split(",").filter(x => x.trim() != "").map(x => x.trim()).some((pre) => pre == ID)){

@@ -163,7 +163,7 @@
       }
       if (Name.trim() == "") {
         isValid = false;
-        errorMessage += "Keine Name angegeben, ";
+        errorMessage += "Keinen Name angegeben, ";
       }
       if (Duration <= 0) {
         isValid = false;
